@@ -1,22 +1,16 @@
-import { formatDate, type PublicCampaign } from '@zopf/shared';
+import { formatChf, formatDate, type PublicCampaign } from '@zopf/shared';
 import { serverApi } from '@/lib/api';
 import { getBrand } from '@/lib/brand';
 import { getI18n } from '@/lib/i18n';
 
-/** Plain text with blank lines as paragraphs. Markdown rendering by the backend follows with the campaign admin. */
-function Paragraphs({ text }: { text: string }) {
+/** HTML rendered and sanitised by the backend from the campaign's Markdown (lib/markdown.ts). */
+function Rendered({ html }: { html: string }) {
   return (
-    <>
-      {text
-        .split(/\n{2,}/)
-        .map((p) => p.trim())
-        .filter(Boolean)
-        .map((p) => (
-          <p key={p} className="whitespace-pre-line">
-            {p}
-          </p>
-        ))}
-    </>
+    <div
+      className="space-y-3 [&_a]:text-brand [&_a]:underline dark:[&_a]:text-sky-300 [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6"
+      // biome-ignore lint/security/noDangerouslySetInnerHtml: produced by markdown-it with raw HTML switched off
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
   );
 }
 
@@ -57,16 +51,38 @@ export default async function HomePage() {
         {open && <p className="mt-6 inline-block rounded-full bg-brand-2 px-5 py-2 font-semibold text-on-brand-2">{t('home.orderSoon')}</p>}
       </section>
 
-      {campaign.info && (
-        <section className="space-y-3 text-lg leading-relaxed">
-          <Paragraphs text={campaign.info} />
+      {campaign.infoHtml && (
+        <section className="text-lg leading-relaxed">
+          <Rendered html={campaign.infoHtml} />
         </section>
       )}
 
-      {campaign.purpose && (
+      {campaign.products.length > 0 && (
+        <section className="space-y-4">
+          <h2 className="text-xl font-bold">{t('home.offer')}</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {campaign.products.map((product) => (
+              <article key={product.id} className="rounded-2xl border border-zinc-200 p-5 dark:border-zinc-800">
+                <h3 className="text-lg font-bold">{product.name}</h3>
+                {product.description && <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{product.description}</p>}
+                <ul className="mt-3 space-y-1">
+                  {product.sizes.map((size) => (
+                    <li key={size.id} className="flex justify-between gap-4">
+                      <span>{size.label}</span>
+                      <span className="font-semibold tabular-nums">{t('common.chf', { amount: formatChf(size.priceRappen, locale) })}</span>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {campaign.purposeHtml && (
         <section className="space-y-3 rounded-2xl border border-zinc-200 p-6 dark:border-zinc-800">
           <h2 className="text-xl font-bold">{t('home.purpose')}</h2>
-          <Paragraphs text={campaign.purpose} />
+          <Rendered html={campaign.purposeHtml} />
         </section>
       )}
     </div>

@@ -30,6 +30,8 @@ const contentSecurityPolicy = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  // Dev server only: also reachable as 127.0.0.1 (localhost may be taken by an old service worker).
+  allowedDevOrigins: ['127.0.0.1'],
   turbopack: { root: path.resolve(__dirname, '../../') },
   async rewrites() {
     return [{ source: '/api/:path*', destination: `${internalApi}/api/:path*` }];

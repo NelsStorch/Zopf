@@ -160,7 +160,7 @@ Alle Variablen mit Erklärung: `.env.example`.
 ## Umsetzungsreihenfolge
 
 1. **Gerüst**: Monorepo, Docker dev/prod, Deploy, CI, Branding, i18n, Prisma-Schema, Admin-Login. ✅
-2. **Aktion und Produkte** im Admin, öffentliche Infoseite.
+2. **Aktion und Produkte** im Admin, öffentliche Infoseite. ✅
 3. **Adressverzeichnis**: Import, Suche, «Adresse fehlt».
 4. **Bestellen**: Formular, Bestätigung per Mail, persönlicher Link, Postausgang.
 5. **QR-Rechnung** und Zahlungen im Admin, Erinnerungen.

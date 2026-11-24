@@ -35,7 +35,7 @@ export function LoginForm({ labels }: { labels: Record<'username' | 'password' |
   }
 
   return (
-    <form onSubmit={submit} className="space-y-4">
+    <form method="post" onSubmit={submit} className="space-y-4">
       <label className="block space-y-1">
         <span className="text-sm font-medium">{labels.username}</span>
         <input name="username" autoComplete="username" required className={input} />

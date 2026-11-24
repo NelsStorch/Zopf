@@ -71,9 +71,11 @@ Das Backend läuft als ein Container. Die Sperre nach Fehlanmeldungen liegt im A
 
 ## WAF
 
-Steht eine WAF (z. B. CrowdSec AppSec mit OWASP CRS) vor dem Server, kann sie Freitext blockieren. Freitext geht nur in benannten JSON-Feldern, nie als HTML. Voraussichtlich brauchen später diese Pfade eine Ausnahme:
+Steht eine WAF (z. B. CrowdSec AppSec mit OWASP CRS) vor dem Server, kann sie Freitext blockieren. Freitext geht nur in benannten JSON-Feldern, nie als HTML; Markdown rendert das Backend.
 
 | Pfad | Feld | Wofür |
 | --- | --- | --- |
-| `POST /api/v1/public/orders` | `notes` | Bemerkung zur Lieferung |
-| `PUT /api/v1/admin/campaigns/:id` | `infoDe`, `infoEn`, `purposeDe`, `purposeEn` | Infotexte (Markdown) |
+| `POST /api/v1/public/orders` (folgt) | `notes`, Name, Adresse | Bemerkung zur Lieferung, Kontaktdaten |
+| `/api/v1/admin/*` | `infoDe`, `infoEn`, `purposeDe`, `purposeEn`, Produktnamen und -beschreibungen | Texte der Aktion (Markdown) |
+
+Alle Admin-Pfade liegen unter `/api/v1/admin/`, so dass eine WAF sie mit einer einzigen Regel von den Textfiltern ausnehmen kann (sie sind ohnehin nur mit Admin-Sitzung nutzbar).

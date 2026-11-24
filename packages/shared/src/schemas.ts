@@ -21,7 +21,7 @@ export type CampaignStatus = (typeof CAMPAIGN_STATUSES)[number];
 export const PAYMENT_METHODS = ['QR_INVOICE', 'ON_DELIVERY'] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
-/** What the public pages get about the running campaign. */
+/** What the public pages get about the running campaign. Texts are HTML rendered and sanitised by the backend. */
 export interface PublicCampaign {
   slug: string;
   name: string;
@@ -29,8 +29,9 @@ export interface PublicCampaign {
   deliveryDate: string;
   deliveryTimeText: string | null;
   orderDeadline: string;
-  info: string | null;
-  purpose: string | null;
+  infoHtml: string | null;
+  purposeHtml: string | null;
+  products: import('./campaign.js').PublicProduct[];
 }
 
 export interface SessionUser {
