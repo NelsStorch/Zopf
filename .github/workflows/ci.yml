@@ -55,18 +55,23 @@ jobs:
       - name: Tests
         run: npm test
 
-  # The repository is public: no secrets, no installation addresses.
+  # The repository is public: no secrets, no installation addresses. Scans the whole
+  # history (the gitleaks action fails on the very first push of a branch), with the
+  # known placeholders allowed in .gitleaks.toml.
   secrets:
     name: Secret-Scan
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      GITLEAKS_VERSION: 8.24.3
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: gitleaks installieren
+        run: curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" | tar -xz gitleaks
+      - name: Ganze Historie prüfen
+        run: ./gitleaks git --redact --verbose --exit-code 1 --config .gitleaks.toml .
 
   # The migrations must build exactly schema.prisma on an empty database.
   migrations:

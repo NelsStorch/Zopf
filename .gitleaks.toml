@@ -1,0 +1,14 @@
+# Secret-Scan der CI (.github/workflows/ci.yml). Alle Standardregeln gelten;
+# erlaubt sind nur diese bekannten Platzhalter, die wie Geheimnisse aussehen.
+title = "Zopfaktion"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Platzhalter in .env.example und das feste Secret der Unit-Tests, keine echten Geheimnisse"
+regexTarget = "match"
+regexes = [
+  '''MIND_32_ZEICHEN_ZUFALL''',
+  '''test-secret-with-at-least-32-characters-ok''',
+]
