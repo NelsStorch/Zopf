@@ -109,6 +109,25 @@ export interface PublicProduct {
   sizes: { id: number; label: string; priceRappen: number }[];
 }
 
+/** A hit of the address search when ordering. */
+export interface AddressSuggestion {
+  id: number;
+  street: string;
+  houseNumber: string;
+  zip: string;
+  city: string;
+}
+
+export const AddressImportSchema = z.object({ zipCodes: z.array(z.string().trim().regex(ZIP_CODE)).min(1).max(300) });
+
+export interface AddressImportStatus {
+  running: boolean;
+  phase: 'download' | 'read' | 'store' | null;
+  last: { id: number; zipCodes: string[]; startedAt: string; finishedAt: string | null; imported: number; removed: number; error: string | null } | null;
+  /** Addresses in the database per postal code. */
+  counts: { zip: string; count: number }[];
+}
+
 /** URL part from a name: "Zopfaktion 2027" -> "zopfaktion-2027". */
 export function slugify(value: string): string {
   return (

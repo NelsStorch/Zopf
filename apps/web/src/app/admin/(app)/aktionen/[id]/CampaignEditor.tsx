@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { formatDate, translator, type AdminCampaign, type CampaignStatus, type Locale, type MessageKey } from '@zopf/shared';
+import { AddressDirectory } from '@/components/admin/AddressDirectory';
 import { CampaignForm } from '@/components/admin/CampaignForm';
 import { ProductsEditor } from '@/components/admin/ProductsEditor';
 import { Button, Notice, StatusBadge } from '@/components/admin/ui';
@@ -82,6 +83,8 @@ export function CampaignEditor({ locale, initial }: { locale: Locale; initial: A
       </header>
 
       <ProductsEditor locale={locale} campaign={campaign} onChange={setCampaign} />
+
+      <AddressDirectory locale={locale} zipCodes={campaign.zipCodes} />
 
       <CampaignForm key={campaign.id} locale={locale} campaign={campaign} onSaved={setCampaign} />
 

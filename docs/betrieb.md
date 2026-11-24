@@ -61,6 +61,14 @@ Nach einer Änderung an der `.env`: `docker compose … up -d` (startet die Cont
 - **Zurücksetzen:** `.\rollback.ps1 dev -List`, `.\rollback.ps1 prod -Revision <tag> -Reason "…"`. Die Datenbank bleibt, wie sie ist; Migrationen mit `DROP COLUMN/TABLE` nach dem Ziel-Stand stoppen den Rollback.
 - Discord-Meldungen, wenn in `deploy.config.ps1` ein Webhook steht. Die Serveradresse steht nie in den Meldungen.
 
+## Adressverzeichnis
+
+Im Admin bei der Aktion: «Adressen importieren». Das Backend lädt das amtliche Gebäudeadressverzeichnis von swisstopo (CSV-ZIP, ca. 150 MB, täglich aktualisiert, Open Government Data mit Quellenangabe «© swisstopo»), behält nur die Adressen mit Status «real» in den Postleitzahlen der Aktion und rechnet die Koordinaten von LV95 in WGS84 um. Dauer etwa eine halbe Minute. Danach fragt die Adresssuche beim Bestellen niemanden mehr ausser der eigenen Datenbank.
+
+- Der Download läuft aus dem Backend-Container über das Proxy-Netz; die Datei liegt nur während des Imports in `/tmp` des Containers.
+- `ADDRESS_DIRECTORY_URL` zeigt bei Bedarf auf einen eigenen Spiegel, `ADDRESS_DIRECTORY_FILE` auf ein ZIP im Container (ohne Download).
+- Für Adressen, die im Verzeichnis fehlen, fragt das Backend beim Bestellen einmal den SearchServer von geo.admin.ch (nur die Adresse, nie Name oder E-Mail). Findet er nichts, setzt das OK den Pin von Hand.
+
 ## Logs
 
 `docker compose -p zopf-prod logs -f backend`. Die Zeilen enthalten keine IP-Adressen, Header, Cookies oder Query-Strings, weil Links Geheimnisse tragen (Bestellung, Route).

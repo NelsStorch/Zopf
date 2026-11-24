@@ -131,6 +131,20 @@ model Address {
   @@map("addresses")
 }
 
+// One run of the address import (admin, see lib/address-import.ts).
+model AddressImport {
+  id         Int       @id @default(autoincrement())
+  zipCodes   String[]
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  imported   Int       @default(0)
+  removed    Int       @default(0)
+  error      String?
+  userId     Int?
+
+  @@map("address_imports")
+}
+
 // ---------------------------------------------------------------- orders
 
 enum OrderStatus {

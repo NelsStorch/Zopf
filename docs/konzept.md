@@ -161,7 +161,7 @@ Alle Variablen mit Erklärung: `.env.example`.
 
 1. **Gerüst**: Monorepo, Docker dev/prod, Deploy, CI, Branding, i18n, Prisma-Schema, Admin-Login. ✅
 2. **Aktion und Produkte** im Admin, öffentliche Infoseite. ✅
-3. **Adressverzeichnis**: Import, Suche, «Adresse fehlt».
+3. **Adressverzeichnis**: Import, Suche, Geocoding für «Adresse fehlt». ✅ (das Feld selbst kommt mit dem Bestellformular)
 4. **Bestellen**: Formular, Bestätigung per Mail, persönlicher Link, Postausgang.
 5. **QR-Rechnung** und Zahlungen im Admin, Erinnerungen.
 6. **Backstube** und Exporte.

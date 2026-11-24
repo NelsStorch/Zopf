@@ -8,6 +8,7 @@ import { hasZodFastifySchemaValidationErrors, serializerCompiler, validatorCompi
 import { registerAuth } from './lib/auth.js';
 import { bootstrap } from './lib/bootstrap.js';
 import { prisma } from './lib/prisma.js';
+import { adminAddressRoutes } from './routes/admin-addresses.js';
 import { adminCampaignRoutes } from './routes/admin-campaigns.js';
 import { authRoutes } from './routes/auth.js';
 import { publicRoutes } from './routes/public.js';
@@ -58,6 +59,7 @@ async function start() {
   await app.register(publicRoutes, { prefix: '/api/v1/public' });
   // Everything under /api/v1/admin needs an admin session (hook in each plugin).
   await app.register(adminCampaignRoutes, { prefix: '/api/v1/admin' });
+  await app.register(adminAddressRoutes, { prefix: '/api/v1/admin' });
 
   await bootstrap(app.log);
 
