@@ -1,0 +1,79 @@
+# Betrieb: Server, Domain, Branding, Deployment
+
+Für die Person, die eine Installation betreut. Zurück zur [README](../README.md).
+
+Dieses Dokument nennt bewusst keine Server, Domains oder Pfade einer echten Installation. Die stehen nur in der `.env` auf dem Server und in `deploy.config.ps1` (beide gitignored).
+
+## Aufbau
+
+- Ein Docker-Stack pro Umgebung: `db` (PostgreSQL), `backend` (API), `frontend` (Next.js).
+- **Eine Domain** (`APP_DOMAIN`) für alles: Traefik schickt `https://<APP_DOMAIN>/api/…` an das Backend, alles andere an das Frontend. Dadurch braucht es kein CORS, und das Sitzungs-Cookie bleibt First-Party.
+- Drei Netze pro Installation, wie im Cevi-Laden:
+
+| Netz | Wer | Zweck |
+| --- | --- | --- |
+| `db` (intern) | Datenbank, Backend | Nur das Backend erreicht die Datenbank, kein veröffentlichter Port |
+| `app` (intern) | Backend, Frontend | Frontend ruft das Backend unter `http://backend:4000` |
+| `PROXY_NETWORK` | Backend, Frontend, Traefik | Einziger Weg herein und hinaus (Mail, später Geocoding) |
+
+## Neue Installation
+
+1. Auf dem Server das Proxy-Netz anlegen und Traefik daran anschliessen (nicht `--internal`, sonst kommt das Backend nicht an den Mailserver):
+   ```bash
+   docker network create zopf_prod_proxy   # bzw. zopf_dev_proxy
+   ```
+2. Ordner `<RemoteBase>/zopf-prod` (bzw. `zopf-dev`) anlegen, `.env.example` als `.env` hineinkopieren und ausfüllen. Für dev: `PROXY_NETWORK=zopf_dev_proxy` und `MAIL_ENV_LABEL=DEV`.
+3. DNS-Eintrag für `APP_DOMAIN` auf den Server zeigen lassen.
+4. Lokal `deploy.config.example.ps1` nach `deploy.config.ps1` kopieren und ausfüllen, dann `.\deploy.ps1 dev`.
+5. Im Log des Backends steht beim ersten Start das Passwort für `admin` (oder es kommt aus `INITIAL_ADMIN_PASSWORD`): `docker compose -p zopf-dev logs backend`.
+
+## Domain wechseln
+
+`APP_DOMAIN` in der `.env` auf dem Server ändern, dann im Projektordner:
+
+```bash
+docker compose -f docker-compose.yml -p zopf-prod up -d
+```
+
+Traefik holt das Zertifikat selbst. Kein neuer Build nötig: Links in Mails, Traefik-Regeln und der Health-Check des Deploys lesen die Domain aus der `.env`. Soll die alte Adresse weiterleiten, braucht es dafür eine eigene Traefik-Regel (Redirect), z. B. in der dynamischen Konfiguration von Traefik.
+
+## Branding
+
+Alles zur Laufzeit, ohne neuen Build:
+
+| Was | Wo |
+| --- | --- |
+| Vereinsname, Name der Aktion | `ORG_NAME`, `APP_NAME` |
+| Farben | `BRAND_COLOR_PRIMARY`, `BRAND_COLOR_SECONDARY` (Hex). Die Textfarbe darauf (schwarz/weiss) wählt die App nach Kontrast |
+| Logo | Ordner `branding/` neben der Compose-Datei: `logo.svg` (Webseite), `logo.png` (PDFs), optional `favicon.ico`. Wird read-only in beide Container gemountet. Fehlt eine Datei, gilt das Cevi-Logo |
+| Kontakt, Impressum, Postadresse | `CONTACT_EMAIL`, `LEGAL_IMPRINT_URL`, `LEGAL_POSTAL_ADDRESS` |
+
+Nach einer Änderung an der `.env`: `docker compose … up -d` (startet die Container mit den neuen Werten). Nach einer Änderung am Logo reicht ein Neuladen (Cache 1 Stunde).
+
+## Deploy mit `deploy.ps1`
+
+Übernommen aus dem Cevi-Laden, nur ohne fest eingetragene Domains:
+
+- `.\deploy.ps1` (dev, Standard) bzw. `.\deploy.ps1 prod`. Optionen: `-SkipBackup`, `-Force` (nur im Notfall).
+- Ablauf: Archiv packen (ohne `.env`, Dumps, CSV, `branding/`, `deploy.config.ps1`), prüfen, dass auf dem Server `.env` mit `APP_DOMAIN` und das Proxy-Netz da sind, DB-Dump, Images bauen (alte Container laufen weiter), Migrationen im neuen Image, Backend und Frontend einzeln per `docker rollout` tauschen, dann `https://<APP_DOMAIN>/api/health` und `https://<APP_DOMAIN>/` prüfen.
+- **Prod nur mit geprüftem Stand:** alles committet, auf `master`, gepusht, CI für genau diesen Commit grün (`gh` angemeldet) und derselbe Stand vorher auf dev deployt.
+- Images bekommen den Git-Stand als Tag; auf dem Server steht der laufende Stand in `REVISION`, die letzten 7 in `.revisions`.
+- **Zurücksetzen:** `.\rollback.ps1 dev -List`, `.\rollback.ps1 prod -Revision <tag> -Reason "…"`. Die Datenbank bleibt, wie sie ist; Migrationen mit `DROP COLUMN/TABLE` nach dem Ziel-Stand stoppen den Rollback.
+- Discord-Meldungen, wenn in `deploy.config.ps1` ein Webhook steht. Die Serveradresse steht nie in den Meldungen.
+
+## Logs
+
+`docker compose -p zopf-prod logs -f backend`. Die Zeilen enthalten keine IP-Adressen, Header, Cookies oder Query-Strings, weil Links Geheimnisse tragen (Bestellung, Route).
+
+## Grenzen
+
+Das Backend läuft als ein Container. Die Sperre nach Fehlanmeldungen liegt im Arbeitsspeicher; ein Neustart hebt sie auf. Für eine Zopfaktion ist ein Container richtig.
+
+## WAF
+
+Steht eine WAF (z. B. CrowdSec AppSec mit OWASP CRS) vor dem Server, kann sie Freitext blockieren. Freitext geht nur in benannten JSON-Feldern, nie als HTML. Voraussichtlich brauchen später diese Pfade eine Ausnahme:
+
+| Pfad | Feld | Wofür |
+| --- | --- | --- |
+| `POST /api/v1/public/orders` | `notes` | Bemerkung zur Lieferung |
+| `PUT /api/v1/admin/campaigns/:id` | `infoDe`, `infoEn`, `purposeDe`, `purposeEn` | Infotexte (Markdown) |

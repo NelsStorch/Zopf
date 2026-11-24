@@ -1,0 +1,55 @@
+# Environment & secrets: never in this public repository
+.env
+.env.*
+!.env.example
+!.env.dev.example
+!.env.prod.example
+*.pem
+*.key
+*.crt
+*.pfx
+*.p12
+id_rsa
+id_ed25519
+credentials.json
+
+# Server address and webhook for deploy.ps1 (template: deploy.config.example.ps1)
+deploy.config.ps1
+deploy.tar.gz
+deploy-remote.sh
+rollback-remote.sh
+
+# Database dumps and backups (may contain customer data)
+*.sql
+*.sql.gz
+*.dump
+*.sqlite
+!apps/backend/prisma/migrations/**/migration.sql
+backups/
+
+# Address directory downloads (large, fetched by the import)
+*.csv
+!apps/backend/test/fixtures/*.csv
+
+# Own branding of an installation (mounted as a volume, see docs/betrieb.md)
+/branding/
+
+# Dependencies & build output
+node_modules/
+dist/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS & editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+.claude/settings.local.json

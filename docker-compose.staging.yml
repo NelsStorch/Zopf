@@ -1,0 +1,178 @@
+# Test stack on the server (deploy.ps1 dev), same as docker-compose.yml but kept apart:
+# own containers, volume, proxy network and router names, never indexed by search engines.
+# Everything installation-specific comes from .env (see .env.example);
+# there are no domains or addresses in this file.
+#
+# Web and API share one domain: Traefik sends https://<APP_DOMAIN>/api to the backend,
+# everything else to the web app.
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+# Branding and contact, read at run time by both apps (shared/src/branding.ts).
+x-brand: &brand
+  ORG_NAME: ${ORG_NAME:-}
+  APP_NAME: ${APP_NAME:-}
+  BRAND_COLOR_PRIMARY: ${BRAND_COLOR_PRIMARY:-}
+  BRAND_COLOR_SECONDARY: ${BRAND_COLOR_SECONDARY:-}
+  CONTACT_EMAIL: ${CONTACT_EMAIL:-}
+  LEGAL_IMPRINT_URL: ${LEGAL_IMPRINT_URL:-}
+  LEGAL_POSTAL_ADDRESS: ${LEGAL_POSTAL_ADDRESS:-}
+  BRANDING_DIR: /branding
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: zopf-dev-db
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      POSTGRES_USER: ${DB_USER:-zopf}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD muss in .env gesetzt sein}
+      POSTGRES_DB: ${DB_NAME:-zopf}
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    networks:
+      - db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-zopf} -d ${DB_NAME:-zopf}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+      target: runner
+    init: true
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      <<: *brand
+      NODE_ENV: production
+      PORT: 4000
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      APP_DOMAIN: ${APP_DOMAIN:?APP_DOMAIN muss in .env gesetzt sein}
+      DATABASE_URL: postgresql://${DB_USER:-zopf}:${DB_PASSWORD}@db:5432/${DB_NAME:-zopf}?schema=public
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET muss in .env gesetzt sein (mind. 32 Zeichen)}
+      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-}
+      PAYMENT_IBAN: ${PAYMENT_IBAN:-}
+      PAYMENT_CREDITOR_NAME: ${PAYMENT_CREDITOR_NAME:-}
+      PAYMENT_CREDITOR_ADDRESS: ${PAYMENT_CREDITOR_ADDRESS:-}
+      PAYMENT_CREDITOR_ZIP: ${PAYMENT_CREDITOR_ZIP:-}
+      PAYMENT_CREDITOR_CITY: ${PAYMENT_CREDITOR_CITY:-}
+      PAYMENT_MESSAGE: ${PAYMENT_MESSAGE:-}
+      TWINT_QR_PAYLOAD: ${TWINT_QR_PAYLOAD:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_SECURE: ${SMTP_SECURE:-true}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      MAIL_ENV_LABEL: ${MAIL_ENV_LABEL:-DEV}
+      IMAP_ENABLED: ${IMAP_ENABLED:-false}
+      IMAP_HOST: ${IMAP_HOST:-}
+      IMAP_PORT: ${IMAP_PORT:-993}
+      IMAP_SECURE: ${IMAP_SECURE:-true}
+      IMAP_USER: ${IMAP_USER:-}
+      IMAP_PASS: ${IMAP_PASS:-}
+      OSRM_URL: ${OSRM_URL:-}
+      PERSONAL_DATA_RETENTION_MONTHS: ${PERSONAL_DATA_RETENTION_MONTHS:-24}
+      ORDER_CONFIRM_HOURS: ${ORDER_CONFIRM_HOURS:-48}
+    volumes:
+      - ./branding:/branding:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://127.0.0.1:4000/api/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - db
+      - app
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${PROXY_NETWORK:-zopf_dev_proxy}"
+      - "traefik.http.routers.zopf-dev-api.rule=Host(`${APP_DOMAIN}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.zopf-dev-api.entrypoints=websecure"
+      - "traefik.http.routers.zopf-dev-api.tls.certresolver=${TRAEFIK_CERTRESOLVER:-myresolver}"
+      - "traefik.http.routers.zopf-dev-api.priority=100"
+      - "traefik.http.routers.zopf-dev-api.service=zopf-dev-api"
+      - "traefik.http.routers.zopf-dev-api.middlewares=zopf-dev-noindex,zopf-dev-api-ratelimit"
+      - "traefik.http.middlewares.zopf-dev-api-ratelimit.ratelimit.average=100"
+      - "traefik.http.middlewares.zopf-dev-api-ratelimit.ratelimit.burst=200"
+      - "traefik.http.middlewares.zopf-dev-api-ratelimit.ratelimit.period=1s"
+      - "traefik.http.middlewares.zopf-dev-noindex.headers.customresponseheaders.X-Robots-Tag=noindex, nofollow"
+      - "traefik.http.services.zopf-dev-api.loadbalancer.server.port=4000"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      target: runner
+      args:
+        INTERNAL_API_URL: http://backend:4000
+    init: true
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      <<: *brand
+      NODE_ENV: production
+      PORT: 3000
+      INTERNAL_API_URL: http://backend:4000
+    volumes:
+      - ./branding:/branding:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/ > /dev/null || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - app
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${PROXY_NETWORK:-zopf_dev_proxy}"
+      - "traefik.http.routers.zopf-dev-web.rule=Host(`${APP_DOMAIN}`)"
+      - "traefik.http.routers.zopf-dev-web.entrypoints=websecure"
+      - "traefik.http.routers.zopf-dev-web.tls.certresolver=${TRAEFIK_CERTRESOLVER:-myresolver}"
+      - "traefik.http.routers.zopf-dev-web.service=zopf-dev-web"
+      - "traefik.http.routers.zopf-dev-web.middlewares=zopf-dev-noindex,zopf-dev-web-ratelimit"
+      - "traefik.http.middlewares.zopf-dev-web-ratelimit.ratelimit.average=150"
+      - "traefik.http.middlewares.zopf-dev-web-ratelimit.ratelimit.burst=300"
+      - "traefik.http.middlewares.zopf-dev-web-ratelimit.ratelimit.period=1s"
+      # Plain http only redirects (Traefik's entrypoint "web" usually does that already).
+      - "traefik.http.routers.zopf-dev-web-http.rule=Host(`${APP_DOMAIN}`)"
+      - "traefik.http.routers.zopf-dev-web-http.entrypoints=web"
+      - "traefik.http.routers.zopf-dev-web-http.middlewares=zopf-dev-https"
+      - "traefik.http.middlewares.zopf-dev-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.zopf-dev-https.redirectscheme.permanent=true"
+      - "traefik.http.services.zopf-dev-web.loadbalancer.server.port=3000"
+
+networks:
+  # db: only database and backend, no way out. app: web <-> backend, no way out.
+  # proxy: Traefik, the only way in and out (one own network per installation).
+  db:
+    driver: bridge
+    internal: true
+  app:
+    driver: bridge
+    internal: true
+  proxy:
+    name: ${PROXY_NETWORK:-zopf_dev_proxy}
+    external: true
+
+volumes:
+  postgres_data_dev:

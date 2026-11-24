@@ -1,0 +1,46 @@
+import type { MessageKey } from './de.js';
+
+export const en: Record<MessageKey, string> = {
+  'lang.name': 'English',
+  'lang.switch': 'Deutsch',
+
+  'common.loading': 'Loading…',
+  'common.save': 'Save',
+  'common.cancel': 'Cancel',
+  'common.error': 'Something went wrong. Please try again.',
+  'common.chf': 'CHF {amount}',
+
+  'footer.contact': 'Contact',
+  'footer.imprint': 'Legal notice',
+  'footer.privacy': 'Privacy',
+  'footer.admin': 'For the team',
+
+  'home.noCampaign.title': 'No campaign right now',
+  'home.noCampaign.text': 'The next {appName} is not open yet. Check back soon!',
+  'home.delivery': 'We deliver the braided breads on {date}',
+  'home.deliveryTime': 'Roughly: {time}',
+  'home.deadline': 'Order by {date}',
+  'home.closed': 'Ordering is closed.',
+  'home.purpose': 'What we are raising money for',
+  'home.order': 'Order now',
+  'home.orderSoon': 'The order form is coming soon.',
+
+  'admin.title': 'Administration',
+  'admin.login.title': 'Sign in',
+  'admin.login.username': 'Username',
+  'admin.login.password': 'Password',
+  'admin.login.remember': 'Stay signed in (30 days)',
+  'admin.login.submit': 'Sign in',
+  'admin.login.failed': 'Wrong username or password.',
+  'admin.login.locked': 'Too many failed attempts. Please try again later.',
+  'admin.logout': 'Sign out',
+  'admin.welcome': 'Hello {name}',
+  'admin.dashboard.empty': 'Campaigns, orders, bakery and routes will appear here.',
+  'admin.password.title': 'Change password',
+  'admin.password.required': 'Please set your own password before you continue.',
+  'admin.password.current': 'Current password',
+  'admin.password.new': 'New password (at least {min} characters)',
+  'admin.password.submit': 'Change password',
+  'admin.password.wrong': 'The current password is not correct.',
+  'admin.password.done': 'Password changed.',
+};

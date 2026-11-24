@@ -1,0 +1,125 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Typen, Lint & Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_TELEMETRY_DISABLED: 1
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      - name: Shared-Paket bauen
+        run: npm run build --workspace=packages/shared
+
+      - name: Prisma-Schema prüfen und Client erzeugen
+        working-directory: apps/backend
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+        run: |
+          npx prisma validate
+          npx prisma generate
+
+      - name: Backend typprüfen
+        working-directory: apps/backend
+        run: npx tsc --noEmit
+
+      - name: Web typprüfen
+        working-directory: apps/web
+        run: |
+          npx next typegen
+          npx tsc --noEmit
+
+      - name: Lint (Biome)
+        run: npm run lint
+
+      - name: Tests
+        run: npm test
+
+  # The repository is public: no secrets, no installation addresses.
+  secrets:
+    name: Secret-Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # The migrations must build exactly schema.prisma on an empty database.
+  migrations:
+    name: Datenbank-Migrationen
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Migrationen auf leere Datenbank anwenden
+        working-directory: apps/backend
+        run: npx prisma migrate deploy
+      - name: Schema und Migrationen stimmen überein
+        working-directory: apps/backend
+        # Exit code 2 = schema.prisma changed without a migration (npm run db:migrate -- --name was_geaendert).
+        run: npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code
+
+  docker:
+    name: Docker-Image ${{ matrix.app }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [backend, web]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: apps/${{ matrix.app }}/Dockerfile
+          target: runner
+          push: false
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}

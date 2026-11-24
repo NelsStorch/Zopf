@@ -1,0 +1,119 @@
+# Local development: cp .env.dev.example .env && docker compose -f docker-compose.dev.yml up --build
+# Web on http://localhost:3000 (the API is reached through it under /api), API directly on :4000.
+# All ports are bound to 127.0.0.1, nothing is reachable from the LAN.
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+x-brand: &brand
+  ORG_NAME: ${ORG_NAME:-}
+  APP_NAME: ${APP_NAME:-}
+  BRAND_COLOR_PRIMARY: ${BRAND_COLOR_PRIMARY:-}
+  BRAND_COLOR_SECONDARY: ${BRAND_COLOR_SECONDARY:-}
+  CONTACT_EMAIL: ${CONTACT_EMAIL:-}
+  LEGAL_IMPRINT_URL: ${LEGAL_IMPRINT_URL:-}
+  LEGAL_POSTAL_ADDRESS: ${LEGAL_POSTAL_ADDRESS:-}
+  BRANDING_DIR: /branding
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: zopf-local-db
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      POSTGRES_USER: ${DB_USER:-zopf_dev}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD muss in .env gesetzt sein}
+      POSTGRES_DB: ${DB_NAME:-zopf_dev}
+    ports:
+      - "127.0.0.1:${PORT_DB:-5432}:5432"
+    volumes:
+      - postgres_local_data:/var/lib/postgresql/data
+    networks:
+      - db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-zopf_dev} -d ${DB_NAME:-zopf_dev}"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+      target: development
+    container_name: zopf-local-backend
+    restart: unless-stopped
+    logging: *logging
+    # Bring the database up to date, then start with auto-reload.
+    command: sh -c "sh ./db-migrate.sh && npm run dev"
+    environment:
+      <<: *brand
+      NODE_ENV: development
+      PORT: 4000
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
+      PUBLIC_URL: http://localhost:${PORT_WEB:-3000}
+      DATABASE_URL: postgresql://${DB_USER:-zopf_dev}:${DB_PASSWORD}@db:5432/${DB_NAME:-zopf_dev}?schema=public
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET muss in .env gesetzt sein (mind. 32 Zeichen)}
+      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-}
+      PAYMENT_IBAN: ${PAYMENT_IBAN:-}
+      PAYMENT_CREDITOR_NAME: ${PAYMENT_CREDITOR_NAME:-}
+      PAYMENT_CREDITOR_ADDRESS: ${PAYMENT_CREDITOR_ADDRESS:-}
+      PAYMENT_CREDITOR_ZIP: ${PAYMENT_CREDITOR_ZIP:-}
+      PAYMENT_CREDITOR_CITY: ${PAYMENT_CREDITOR_CITY:-}
+      PAYMENT_MESSAGE: ${PAYMENT_MESSAGE:-}
+      TWINT_QR_PAYLOAD: ${TWINT_QR_PAYLOAD:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_SECURE: ${SMTP_SECURE:-true}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      MAIL_ENV_LABEL: ${MAIL_ENV_LABEL:-LOCAL}
+    ports:
+      - "127.0.0.1:${PORT_API:-4000}:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./apps/backend/src:/app/apps/backend/src
+      - ./apps/backend/prisma:/app/apps/backend/prisma
+      - ./branding:/branding:ro
+    networks:
+      - db
+      - app
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      target: development
+    container_name: zopf-local-frontend
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      <<: *brand
+      NODE_ENV: development
+      PORT: 3000
+      INTERNAL_API_URL: http://backend:4000
+      WATCHPACK_POLLING: "true"
+    ports:
+      - "127.0.0.1:${PORT_WEB:-3000}:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./apps/web/src:/app/apps/web/src
+      - ./apps/web/public:/app/apps/web/public
+      - ./branding:/branding:ro
+    networks:
+      - app
+
+networks:
+  db:
+  app:
+
+volumes:
+  postgres_local_data:

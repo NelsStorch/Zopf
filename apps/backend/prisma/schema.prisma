@@ -1,0 +1,354 @@
+// Data model of the Zopfaktion. Amounts in Rappen (Int). Overview: docs/konzept.md.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------- accounts
+
+model User {
+  id                 Int       @id @default(autoincrement())
+  username           String    @unique
+  passwordHash       String
+  displayName        String?
+  isActive           Boolean   @default(true)
+  mustChangePassword Boolean   @default(false)
+  // Part of every session token. Bumping it ends all sessions of the account.
+  tokenVersion       Int       @default(0)
+  lastLoginAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  auditLogs AuditLog[]
+
+  @@map("users")
+}
+
+// ---------------------------------------------------------------- campaign
+
+enum CampaignStatus {
+  DRAFT
+  OPEN
+  CLOSED
+  ARCHIVED
+}
+
+model Campaign {
+  id               Int            @id @default(autoincrement())
+  slug             String         @unique
+  name             String
+  status           CampaignStatus @default(DRAFT)
+  deliveryDate     DateTime       @db.Date
+  // Free text such as "ab 7 Uhr", shown as is.
+  deliveryTimeText String?
+  orderDeadline    DateTime
+  // Markdown, rendered by the backend (never raw HTML from the browser).
+  infoDe           String?
+  infoEn           String?
+  purposeDe        String?
+  purposeEn        String?
+  invoiceDueDays   Int            @default(30)
+  // Postal codes of the delivery area, e.g. {"8307","8308"}.
+  zipCodes         String[]
+  // Starting point of the routes (bakery).
+  depotLat         Float?
+  depotLng         Float?
+  // Prefix and counter of order numbers, e.g. ZOPF-2027-0142.
+  orderPrefix      String
+  nextOrderNumber  Int            @default(1)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  products Product[]
+  orders   Order[]
+  routes   Route[]
+
+  @@map("campaigns")
+}
+
+model Product {
+  id            Int      @id @default(autoincrement())
+  campaignId    Int
+  nameDe        String
+  nameEn        String?
+  descriptionDe String?
+  descriptionEn String?
+  sortOrder     Int      @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  campaign Campaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  sizes    ProductSize[]
+
+  @@index([campaignId])
+  @@map("products")
+}
+
+model ProductSize {
+  id          Int      @id @default(autoincrement())
+  productId   Int
+  labelDe     String
+  labelEn     String?
+  priceRappen Int
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@index([productId])
+  @@map("product_sizes")
+}
+
+// ---------------------------------------------------------------- addresses
+
+// Imported from the official building address directory (swisstopo, open data)
+// for the postal codes of the delivery area.
+model Address {
+  id          Int     @id @default(autoincrement())
+  // Federal building address id (EGAID), unique in the directory.
+  egaid       BigInt  @unique
+  street      String
+  houseNumber String
+  zip         String
+  city        String
+  lat         Float
+  lng         Float
+  // Lower-case street + number without accents, for the search.
+  searchText  String
+
+  orders Order[]
+
+  @@index([zip])
+  @@index([searchText])
+  @@map("addresses")
+}
+
+// ---------------------------------------------------------------- orders
+
+enum OrderStatus {
+  PENDING_CONFIRMATION
+  CONFIRMED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  QR_INVOICE
+  ON_DELIVERY
+}
+
+enum PaymentStatus {
+  OPEN
+  PAID
+}
+
+enum PaidVia {
+  BANK
+  CASH
+  TWINT
+}
+
+enum DeliveryStatus {
+  PENDING
+  DELIVERED
+  NOT_HOME
+}
+
+enum LocationSource {
+  DIRECTORY
+  GEOCODED
+  MANUAL
+  NONE
+}
+
+model Order {
+  id               Int            @id @default(autoincrement())
+  campaignId       Int
+  // Running number within the campaign; shown as <orderPrefix>-<number, 4 digits>.
+  number           Int
+  status           OrderStatus    @default(PENDING_CONFIRMATION)
+  locale           String         @default("de")
+  // Only hashes of the secret links are stored (sha256).
+  confirmTokenHash String?        @unique
+  accessTokenHash  String?        @unique
+  confirmExpiresAt DateTime?
+  confirmedAt      DateTime?
+  cancelledAt      DateTime?
+
+  customerName  String
+  email         String
+  phone         String?
+  addressId     Int?
+  street        String
+  houseNumber   String
+  zip           String
+  city          String
+  // Entered by hand because the address was missing in the directory.
+  addressManual Boolean        @default(false)
+  lat           Float?
+  lng           Float?
+  locationSource LocationSource @default(NONE)
+  notes         String?
+
+  paymentMethod PaymentMethod
+  paymentStatus PaymentStatus @default(OPEN)
+  paidVia       PaidVia?
+  paidAt        DateTime?
+  totalRappen   Int
+
+  deliveryStatus DeliveryStatus @default(PENDING)
+  deliveredAt    DateTime?
+  deliveryNote   String?
+  routeId        Int?
+  routeSeq       Int?
+
+  // Wants a reminder before next year's campaign (double opt-in, see ReminderContact).
+  reminderOptIn Boolean   @default(false)
+  // Set once personal data has been removed (retention).
+  anonymizedAt  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  campaign Campaign        @relation(fields: [campaignId], references: [id])
+  address  Address?        @relation(fields: [addressId], references: [id], onDelete: SetNull)
+  route    Route?          @relation(fields: [routeId], references: [id], onDelete: SetNull)
+  items    OrderItem[]
+  events   DeliveryEvent[]
+  mailLogs OrderMailLog[]
+
+  @@unique([campaignId, number])
+  @@index([campaignId, status])
+  @@index([routeId])
+  @@index([email])
+  @@map("orders")
+}
+
+model OrderItem {
+  id              Int    @id @default(autoincrement())
+  orderId         Int
+  productSizeId   Int?
+  // Names and price at the time of ordering; later edits of the product do not change them.
+  productName     String
+  sizeLabel       String
+  quantity        Int
+  unitPriceRappen Int
+
+  order       Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productSize ProductSize? @relation(fields: [productSizeId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+// ---------------------------------------------------------------- routes
+
+model Route {
+  id              Int       @id @default(autoincrement())
+  campaignId      Int
+  name            String
+  color           String
+  leaders         String?
+  sortOrder       Int       @default(0)
+  // Secret link for the delivery team (hash only). Rotating it ends the old link.
+  accessTokenHash String?   @unique
+  // The link works from releasedAt until two days after the delivery date.
+  releasedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  campaign Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  orders   Order[]
+  events   DeliveryEvent[]
+
+  @@index([campaignId])
+  @@map("routes")
+}
+
+// Every change from the delivery view, also those queued offline. The client
+// sends its own id per change, so a change that arrives twice counts once.
+model DeliveryEvent {
+  id              Int      @id @default(autoincrement())
+  clientEventId   String   @unique
+  orderId         Int
+  routeId         Int?
+  // "delivery", "payment" or "note"
+  field           String
+  value           String
+  clientCreatedAt DateTime
+  receivedAt      DateTime @default(now())
+
+  order Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  route Route? @relation(fields: [routeId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@map("delivery_events")
+}
+
+// ---------------------------------------------------------------- mail
+
+// Opt-in for a reminder before the next campaign. Kept until unsubscribed.
+model ReminderContact {
+  id                    Int       @id @default(autoincrement())
+  email                 String    @unique
+  locale                String    @default("de")
+  confirmTokenHash      String?   @unique
+  confirmedAt           DateTime?
+  unsubscribeTokenHash  String    @unique
+  lastRemindedAt        DateTime?
+  createdAt             DateTime  @default(now())
+
+  @@map("reminder_contacts")
+}
+
+model OrderMailLog {
+  id      Int      @id @default(autoincrement())
+  orderId Int
+  // "confirm", "confirmation", "invoice", "payment_reminder", "changed", "cancelled"
+  kind    String
+  sentAt  DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_mail_logs")
+}
+
+// Mails the server did not accept are kept here and retried (as in the Cevi shop).
+model OutboxMail {
+  id          Int      @id @default(autoincrement())
+  payload     Json
+  attempts    Int      @default(0)
+  lastError   String?
+  nextAttempt DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([nextAttempt])
+  @@map("outbox_mails")
+}
+
+// ---------------------------------------------------------------- audit
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  // Set when a delivery team acted through its route link.
+  routeId   Int?
+  action    String
+  entity    String?
+  entityId  Int?
+  data      Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@map("audit_logs")
+}

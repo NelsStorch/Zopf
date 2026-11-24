@@ -1,0 +1,41 @@
+{
+  "name": "zopfaktion",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Bestell- und Lieferplattform für Zopfbackaktionen von Vereinen",
+  "license": "AGPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NelsStorch/Zopf.git"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:docker": "docker compose -f docker-compose.dev.yml up --build",
+    "dev:docker:down": "docker compose -f docker-compose.dev.yml down",
+    "build": "npm run build --workspaces",
+    "db:migrate": "npm run db:migrate --workspace=apps/backend",
+    "db:studio": "npm run db:studio --workspace=apps/backend",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome lint .",
+    "format": "biome format --write ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.8",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.1"
+  },
+  "overrides": {
+    "@prisma/config": {
+      "effect": "^3.22.5"
+    }
+  },
+  "allowScripts": {
+    "prisma": true,
+    "@prisma/engines": true,
+    "esbuild": true
+  }
+}
