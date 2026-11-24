@@ -26,7 +26,9 @@
     "fastify-type-provider-zod": "^7.0.0",
     "markdown-it": "^15.0.3",
     "nodemailer": "^10.6.1",
+    "pdfkit": "^0.21.0",
     "pg": "^8.23.1",
+    "swissqrbill": "^4.4.4",
     "yauzl": "^3.4.0",
     "zod": "^4.6.7"
   },
@@ -34,6 +36,7 @@
     "@types/markdown-it": "^14.2.0",
     "@types/node": "^26.6.6",
     "@types/nodemailer": "^8.0.2",
+    "@types/pdfkit": "^0.17.7",
     "@types/pg": "^8.23.1",
     "@types/yauzl": "^3.4.0",
     "prisma": "^7.10.1",

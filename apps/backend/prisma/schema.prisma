@@ -54,9 +54,6 @@ model Campaign {
   invoiceDueDays   Int            @default(30)
   // Postal codes of the delivery area, e.g. {"8307","8308"}.
   zipCodes         String[]
-  // Starting point of the routes (bakery).
-  depotLat         Float?
-  depotLng         Float?
   // Prefix and counter of order numbers, e.g. ZOPF-2027-0142.
   orderPrefix      String
   nextOrderNumber  Int            @default(1)
@@ -66,6 +63,7 @@ model Campaign {
   products Product[]
   orders   Order[]
   routes   Route[]
+  depots   Depot[]
 
   @@map("campaigns")
 }
@@ -105,6 +103,29 @@ model ProductSize {
 
   @@index([productId])
   @@map("product_sizes")
+}
+
+// Where the delivery teams start (bakery, meeting points). Several per campaign;
+// each route starts at one of them.
+model Depot {
+  id          Int      @id @default(autoincrement())
+  campaignId  Int
+  name        String
+  street      String
+  houseNumber String
+  zip         String
+  city        String
+  lat         Float?
+  lng         Float?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  routes   Route[]
+
+  @@index([campaignId])
+  @@map("depots")
 }
 
 // ---------------------------------------------------------------- addresses
@@ -274,6 +295,7 @@ model Route {
   color           String
   leaders         String?
   sortOrder       Int       @default(0)
+  depotId         Int?
   // Secret link for the delivery team (hash only). Rotating it ends the old link.
   accessTokenHash String?   @unique
   // The link works from releasedAt until two days after the delivery date.
@@ -282,6 +304,7 @@ model Route {
   updatedAt       DateTime  @updatedAt
 
   campaign Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  depot    Depot?          @relation(fields: [depotId], references: [id], onDelete: SetNull)
   orders   Order[]
   events   DeliveryEvent[]
 

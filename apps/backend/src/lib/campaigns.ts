@@ -14,6 +14,7 @@ export async function loadAdminCampaign(id: number): Promise<AdminCampaign | nul
           sizes: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }], include: { _count: { select: { orderItems: true } } } },
         },
       },
+      depots: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] },
       _count: { select: { orders: true } },
     },
   });
@@ -28,8 +29,16 @@ export async function loadAdminCampaign(id: number): Promise<AdminCampaign | nul
     invoiceDueDays: campaign.invoiceDueDays,
     zipCodes: campaign.zipCodes,
     orderPrefix: campaign.orderPrefix,
-    depotLat: campaign.depotLat,
-    depotLng: campaign.depotLng,
+    depots: campaign.depots.map((d) => ({
+      id: d.id,
+      name: d.name,
+      street: d.street,
+      houseNumber: d.houseNumber,
+      zip: d.zip,
+      city: d.city,
+      lat: d.lat,
+      lng: d.lng,
+    })),
     products: campaign.products.map((p) => ({
       id: p.id,
       nameDe: p.nameDe,

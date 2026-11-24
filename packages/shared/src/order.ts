@@ -100,8 +100,25 @@ export interface AdminOrderRow {
   totalRappen: number;
   paymentMethod: PaymentMethod;
   paymentStatus: PublicOrder['paymentStatus'];
+  paidVia: PaidVia | null;
+  paidAt: string | null;
+  /** Last payment reminder sent, if any. */
+  lastReminderAt: string | null;
   notes: string | null;
 }
+
+export const PAID_VIA = ['BANK', 'CASH', 'TWINT'] as const;
+export type PaidVia = (typeof PAID_VIA)[number];
+
+/** Mark one order paid (with how) or open again. */
+export const PaymentUpdateSchema = z.discriminatedUnion('status', [
+  z.object({ status: z.literal('PAID'), via: z.enum(PAID_VIA) }),
+  z.object({ status: z.literal('OPEN') }),
+]);
+export type PaymentUpdate = z.infer<typeof PaymentUpdateSchema>;
+
+export const OrderIdsSchema = z.object({ ids: z.array(z.number().int().positive()).min(1).max(1000) });
+export const BulkPaidSchema = OrderIdsSchema.extend({ via: z.enum(PAID_VIA) });
 
 /** Donation suggestions for a subtotal: round up to the next 5 and 10 francs, plus fixed amounts. */
 export function donationSuggestions(itemsRappen: number): number[] {

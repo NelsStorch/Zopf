@@ -1,6 +1,6 @@
 import { formatChf, formatDate, readableOn, translator, type Locale, type Translator } from '@zopf/shared';
 import { config } from './config.js';
-import { escapeHtml, type Mail } from './mail.js';
+import { escapeHtml, type Mail, type MailAttachment } from './mail.js';
 
 /**
  * Mails to customers, in their language. HTML is built here from plain values
@@ -92,9 +92,18 @@ ${body}
   return { to: '', subject, text, html, locale };
 }
 
-const paymentBlock = (s: OrderSummary, t: Translator): Block => ({
-  p: t(s.paymentMethod === 'QR_INVOICE' ? 'mail.payQr' : 'mail.payOnDelivery', { amount: formatChf(s.totalRappen, s.locale) }),
-});
+/** The QR invoice that goes with a mail, and its due date. */
+export interface InvoiceAttachment {
+  attachment: MailAttachment;
+  dueDate: Date;
+}
+
+const paymentBlock = (s: OrderSummary, t: Translator, invoice?: InvoiceAttachment | null): Block => {
+  const amount = formatChf(s.totalRappen, s.locale);
+  if (s.paymentMethod === 'ON_DELIVERY') return { p: t('mail.payOnDelivery', { amount }) };
+  if (invoice) return { p: t('mail.payQrAttached', { amount, date: formatDate(invoice.dueDate, s.locale, false) }) };
+  return { p: t('mail.payQr', { amount }) };
+};
 
 export function confirmRequestMail(s: OrderSummary, confirmUrl: string): Mail {
   const t = translator(s.locale);
@@ -111,7 +120,12 @@ export function confirmRequestMail(s: OrderSummary, confirmUrl: string): Mail {
   };
 }
 
-export function confirmedMail(s: OrderSummary, manageUrl: string, kind: 'confirmed' | 'changed' = 'confirmed'): Mail {
+export function confirmedMail(
+  s: OrderSummary,
+  manageUrl: string,
+  kind: 'confirmed' | 'changed' = 'confirmed',
+  invoice: InvoiceAttachment | null = null
+): Mail {
   const t = translator(s.locale);
   const number = s.number ?? '';
   return {
@@ -120,12 +134,30 @@ export function confirmedMail(s: OrderSummary, manageUrl: string, kind: 'confirm
       { p: t(kind === 'confirmed' ? 'mail.confirmed.intro' : 'mail.changed.intro') },
       { summary: s },
       { p: t('mail.delivery', { date: formatDate(s.campaign.deliveryDate, s.locale) }) },
-      paymentBlock(s, t),
+      paymentBlock(s, t, invoice),
       ...(s.address.manual ? [{ p: t('mail.addressCheck') }] : []),
       { button: { label: t('mail.manage'), url: manageUrl } },
       { small: t('mail.manageUntil', { date: deadlineText(s.campaign.orderDeadline, s.locale) }) },
     ]),
     to: s.email,
+    attachments: invoice ? [invoice.attachment] : undefined,
+  };
+}
+
+/** Sent by the team for open QR invoices; the invoice goes along again. */
+export function paymentReminderMail(s: OrderSummary, manageUrl: string, invoice: InvoiceAttachment): Mail {
+  const t = translator(s.locale);
+  const number = s.number ?? '';
+  return {
+    ...render(s.locale, t('mail.reminder.subject', { number }), [
+      { p: t('mail.greeting', { name: s.customerName }) },
+      { p: t('mail.reminder.intro', { number, amount: formatChf(s.totalRappen, s.locale) }) },
+      { summary: s },
+      { p: t('mail.reminder.already') },
+      { button: { label: t('mail.manage'), url: manageUrl } },
+    ]),
+    to: s.email,
+    attachments: [invoice.attachment],
   };
 }
 

@@ -1,40 +1,117 @@
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
-import type { AdminOrderRow } from '@zopf/shared';
+import { BulkPaidSchema, OrderIdsSchema, PaymentUpdateSchema, type AdminOrderRow } from '@zopf/shared';
 import { prisma } from '../lib/prisma.js';
-import { formatNumber } from '../lib/orders.js';
+import { audit } from '../lib/audit.js';
+import { sendMail } from '../lib/mail.js';
+import { paymentReminderMail } from '../lib/mail-templates.js';
+import { formatNumber, invoiceAttachment, invoiceData, manageUrl, orderInclude, toSummary } from '../lib/orders.js';
+import { invoiceFilename, renderInvoice } from '../lib/invoice.js';
+import { newToken } from '../lib/tokens.js';
+import { pdfDisposition } from '../lib/pdf-response.js';
 
 const IdParams = z.object({ id: z.coerce.number().int().positive() });
+const notFound = (reply: FastifyReply) => reply.status(404).send({ error: 'not_found' });
+
+async function rows(where: { campaignId?: number; id?: { in: number[] } }): Promise<AdminOrderRow[]> {
+  const orders = await prisma.order.findMany({
+    where,
+    include: {
+      items: { orderBy: { id: 'asc' } },
+      campaign: { select: { orderPrefix: true } },
+      mailLogs: { where: { kind: 'payment_reminder' }, orderBy: { sentAt: 'desc' }, take: 1 },
+    },
+    orderBy: [{ number: { sort: 'desc', nulls: 'first' } }, { id: 'desc' }],
+  });
+  return orders.map((o) => ({
+    id: o.id,
+    number: formatNumber(o),
+    status: o.status,
+    createdAt: o.createdAt.toISOString(),
+    customerName: o.customerName,
+    email: o.email,
+    phone: o.phone,
+    address: `${`${o.street} ${o.houseNumber}`.trim()}, ${o.zip} ${o.city}`,
+    addressManual: o.addressManual,
+    hasLocation: o.lat !== null && o.lng !== null,
+    items: o.items.map((i) => `${i.quantity}× ${i.productName} ${i.sizeLabel}`).join(', '),
+    pieces: o.items.reduce((sum, i) => sum + i.quantity, 0),
+    donationRappen: o.donationRappen,
+    totalRappen: o.totalRappen,
+    paymentMethod: o.paymentMethod,
+    paymentStatus: o.paymentStatus,
+    paidVia: o.paidVia,
+    paidAt: o.paidAt?.toISOString() ?? null,
+    lastReminderAt: o.mailLogs[0]?.sentAt.toISOString() ?? null,
+    notes: o.notes,
+  }));
+}
 
 export async function adminOrderRoutes(app: FastifyInstance) {
   app.addHook('preHandler', app.authenticate);
 
   /** All orders of a campaign, newest first; unconfirmed ones too (they expire on their own). */
-  app.get('/campaigns/:id/orders', { schema: { params: IdParams } }, async (request): Promise<AdminOrderRow[]> => {
+  app.get('/campaigns/:id/orders', { schema: { params: IdParams } }, async (request) => rows({ campaignId: IdParams.parse(request.params).id }));
+
+  /** The invoice as the customer has it (paid ones say so instead of a payment slip). */
+  app.get('/orders/:id/invoice', { schema: { params: IdParams } }, async (request, reply) => {
+    const order = await prisma.order.findUnique({ where: { id: IdParams.parse(request.params).id }, include: orderInclude });
+    if (order?.status !== 'CONFIRMED') return notFound(reply);
+    const data = invoiceData(order);
+    return reply
+      .header('Content-Type', 'application/pdf')
+      .header('Content-Disposition', pdfDisposition(invoiceFilename(data.number, data.locale)))
+      .header('Cache-Control', 'no-store')
+      .send(await renderInvoice(data));
+  });
+
+  app.put('/orders/:id/payment', { schema: { params: IdParams, body: PaymentUpdateSchema } }, async (request, reply) => {
     const { id } = IdParams.parse(request.params);
-    const orders = await prisma.order.findMany({
-      where: { campaignId: id },
-      include: { items: { orderBy: { id: 'asc' } }, campaign: { select: { orderPrefix: true } } },
-      orderBy: [{ number: { sort: 'desc', nulls: 'first' } }, { id: 'desc' }],
+    const update = PaymentUpdateSchema.parse(request.body);
+    const order = await prisma.order.findUnique({ where: { id } });
+    if (order?.status !== 'CONFIRMED') return notFound(reply);
+    await prisma.order.update({
+      where: { id },
+      data: update.status === 'PAID' ? { paymentStatus: 'PAID', paidVia: update.via, paidAt: new Date() } : { paymentStatus: 'OPEN', paidVia: null, paidAt: null },
     });
-    return orders.map((o) => ({
-      id: o.id,
-      number: formatNumber(o),
-      status: o.status,
-      createdAt: o.createdAt.toISOString(),
-      customerName: o.customerName,
-      email: o.email,
-      phone: o.phone,
-      address: `${`${o.street} ${o.houseNumber}`.trim()}, ${o.zip} ${o.city}`,
-      addressManual: o.addressManual,
-      hasLocation: o.lat !== null && o.lng !== null,
-      items: o.items.map((i) => `${i.quantity}× ${i.productName} ${i.sizeLabel}`).join(', '),
-      pieces: o.items.reduce((sum, i) => sum + i.quantity, 0),
-      donationRappen: o.donationRappen,
-      totalRappen: o.totalRappen,
-      paymentMethod: o.paymentMethod,
-      paymentStatus: o.paymentStatus,
-      notes: o.notes,
-    }));
+    await audit(request, update.status === 'PAID' ? 'payment_received' : 'payment_reopened', 'order', id, update.status === 'PAID' ? { via: update.via } : null, request.auth.id);
+    return (await rows({ id: { in: [id] } }))[0];
+  });
+
+  /** Several orders paid at once, e.g. after going through the bank statement. Already paid ones stay as they are. */
+  app.post('/orders/payments', { schema: { body: BulkPaidSchema } }, async (request) => {
+    const { ids, via } = BulkPaidSchema.parse(request.body);
+    const { count } = await prisma.order.updateMany({
+      where: { id: { in: ids }, status: 'CONFIRMED', paymentStatus: 'OPEN' },
+      data: { paymentStatus: 'PAID', paidVia: via, paidAt: new Date() },
+    });
+    await audit(request, 'payments_received', 'order', null, { ids, via, count }, request.auth.id);
+    return { updated: count, rows: await rows({ id: { in: ids } }) };
+  });
+
+  /**
+   * Payment reminders for open QR invoices, with the invoice attached again. Each
+   * mail carries a fresh personal link (the old one stops working), because the
+   * plain link is not stored. Orders that are paid, paid on delivery or not
+   * confirmed are skipped.
+   */
+  app.post('/orders/reminders', { schema: { body: OrderIdsSchema } }, async (request) => {
+    const { ids } = OrderIdsSchema.parse(request.body);
+    const orders = await prisma.order.findMany({
+      where: { id: { in: ids }, status: 'CONFIRMED', paymentStatus: 'OPEN', paymentMethod: 'QR_INVOICE', anonymizedAt: null },
+      include: orderInclude,
+    });
+    let sent = 0;
+    for (const order of orders) {
+      const invoice = await invoiceAttachment(order, true);
+      if (!invoice) continue;
+      const access = newToken();
+      await prisma.order.update({ where: { id: order.id }, data: { accessTokenHash: access.hash } });
+      await sendMail(paymentReminderMail(toSummary(order), manageUrl(access.token), invoice), request.log);
+      await prisma.orderMailLog.create({ data: { orderId: order.id, kind: 'payment_reminder' } });
+      sent++;
+    }
+    await audit(request, 'payment_reminders', 'order', null, { requested: ids.length, sent }, request.auth.id);
+    return { sent, skipped: ids.length - sent, rows: await rows({ id: { in: ids } }) };
   });
 }

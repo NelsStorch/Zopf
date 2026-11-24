@@ -70,10 +70,10 @@ Danach: Mail mit **Bestätigungslink**. Erst der Klick macht die Bestellung gül
 
 - **Preise sind Mindestpreise.** Das Formular ermuntert zu mehr: Schnellwahl «Aufrunden auf …», +5, +10, +20 oder eigener Betrag. Der Zustupf steht als «Spende» in Bestellung, Mail und Rechnung und zählt zum Total.
 
-- **QR-Rechnung**: wie im Cevi-Laden (`pdfkit` + `swissqrbill`, Konto aus `PAYMENT_*`). Mitteilung enthält die Bestellnummer (`ZOPF-2027-0142`). Ohne vollständiges Konto in der env gibt es keine QR-Rechnung, die Option wird ausgeblendet.
+- **QR-Rechnung**: wie im Cevi-Laden (`pdfkit` + `swissqrbill`, Konto aus `PAYMENT_*`), hängt an der Bestätigungs- und Änderungsmail und lässt sich auf der persönlichen Seite herunterladen. Mitteilung enthält die Bestellnummer (`ZOPF-2027-0142`). Normale IBAN und QR-IBAN gehen beide; bei einer QR-IBAN erzeugt die App eine QR-Referenz aus der Bestell-ID. Ohne vollständiges Konto in der env gibt es keine QR-Rechnung, die Option wird ausgeblendet.
 - **Bar/TWINT bei Übergabe**: In der Lieferansicht steht «Kassieren: CHF 24.00». Statischer TWINT-QR aus `TWINT_QR_PAYLOAD` auf dem Routenblatt und in der App.
 - **Bezahlt markieren**: von Hand im Admin (Liste mit Suche nach Nummer/Name/Betrag, Mehrfachauswahl) oder durch das Lieferteam (bar/TWINT). Kein automatischer Bankabgleich in der ersten Version (später möglich: camt.054).
-- **Zahlungserinnerung**: von Hand auslösbar, einzeln oder für alle offenen QR-Rechnungen, mit Vorschau und Testmail. Jede versendete Erinnerung wird pro Bestellung protokolliert.
+- **Zahlungserinnerung**: von Hand auslösbar für ausgewählte Bestellungen; nur offene QR-Rechnungen bekommen eine (mit Rechnung «Zahlungserinnerung», zahlbar in 10 Tagen). Jede wird pro Bestellung protokolliert. Weil der persönliche Link nur gehasht gespeichert ist, enthält die Erinnerung einen neuen Link; der alte gilt dann nicht mehr.
 - **Ab Liefertag**: Offene QR-Rechnungen erscheinen in der Route wie Barzahlende, «offen, bitte kassieren».
 
 ### 4. Backstube
@@ -91,7 +91,7 @@ Das OK gibt die Anzahl Routen ein. Zwei Verfahren, wählbar:
 | **Standard** | nichts | Ausgeglichenes k-Means nach Luftlinie (Routen etwa gleich viele *Zöpfe*, nicht nur Stopps). Innerhalb der Route Reihenfolge per Nearest-Neighbour + 2-opt. Gut für Dorf/Quartier, zu Fuss oder mit dem Velo. |
 | **Mit Strassennetz** | `OSRM_URL` gesetzt (eigener OSRM-Container, CH-Extrakt) | Wie oben, Reihenfolge mit echten Fuss-/Velo-/Autodistanzen. Ohne die Variable ist die Option ausgeblendet. |
 
-Startpunkt (Backstube) als Koordinate pro Aktion. Danach von Hand: Stopps per Klick auf der Karte einer anderen Route zuweisen, Reihenfolge per Drag-and-Drop, Routen umbenennen, Farbe, Leitende als Text. Bestellungen ohne Koordinate («Adresse prüfen») werden zuerst angezeigt; das OK setzt den Pin von Hand.
+Beliebig viele **Startpunkte** pro Aktion (Backstube, Treffpunkte), je mit Name und Adresse aus dem Verzeichnis oder von Hand (Lage per geo.admin.ch). Jede Route startet bei einem davon. Danach von Hand: Stopps per Klick auf der Karte einer anderen Route zuweisen, Reihenfolge per Drag-and-Drop, Routen umbenennen, Farbe, Leitende als Text. Bestellungen ohne Koordinate («Adresse prüfen») werden zuerst angezeigt; das OK setzt den Pin von Hand.
 
 **Routenblatt (PDF, A4)**: Name, Farbe, Leitende, Anzahl Stopps und Zöpfe, Summe zu kassieren, **QR-Code mit dem geheimen Link** (im Branding, Technik aus schichtplan_v2: Fehlerkorrektur H, Logo in der Mitte), TWINT-QR, Ladeliste (Stück pro Produkt/Grösse), Stoppliste in Reihenfolge mit Adresse, Name, Telefon, Bemerkung, Produkten, Betrag und Kästchen zum Abhaken (Papier als Rückfallebene).
 
@@ -165,7 +165,7 @@ Alle Variablen mit Erklärung: `.env.example`.
 2. **Aktion und Produkte** im Admin, öffentliche Infoseite. ✅
 3. **Adressverzeichnis**: Import, Suche, Geocoding für «Adresse fehlt». ✅ (das Feld selbst kommt mit dem Bestellformular)
 4. **Bestellen**: Formular mit Spende (Preise sind Mindestpreise), Bestätigung per Mail, persönlicher Link, Postausgang, Datenschutzseite, Aufbewahrung. ✅
-5. **QR-Rechnung** und Zahlungen im Admin, Erinnerungen.
+5. **QR-Rechnung** und Zahlungen im Admin, Erinnerungen; mehrere Startpunkte mit Adresse. ✅
 6. **Backstube** und Exporte.
 7. **Tourenplanung**: Clustering, Karte, manuelle Anpassung, Routenblatt.
 8. **Lieferansicht** mit Offline-Sync.

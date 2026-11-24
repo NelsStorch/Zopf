@@ -3,6 +3,8 @@ import { z } from 'zod';
 import {
   CampaignInputSchema,
   CampaignStatusSchema,
+  DepotInputSchema,
+  type DepotInput,
   ProductInputSchema,
   ReorderSchema,
   SizeInputSchema,
@@ -13,6 +15,7 @@ import {
 import { prisma } from '../lib/prisma.js';
 import { audit } from '../lib/audit.js';
 import { loadAdminCampaign, toSummary } from '../lib/campaigns.js';
+import { geocodeAddress } from '../lib/geocode.js';
 
 const IdParams = z.object({ id: z.coerce.number().int().positive() });
 
@@ -39,9 +42,24 @@ function campaignData(input: CampaignInput) {
     invoiceDueDays: input.invoiceDueDays,
     zipCodes: [...new Set(input.zipCodes)].sort(),
     orderPrefix: input.orderPrefix,
-    depotLat: input.depotLat ?? null,
-    depotLng: input.depotLng ?? null,
   };
+}
+
+/**
+ * Address and position of a start point: from the address directory, or typed by
+ * hand and located via geo.admin.ch. A start point without a position is useless
+ * for route planning, so an unknown address is refused.
+ */
+async function depotData(input: DepotInput) {
+  if (input.address.kind === 'directory') {
+    const a = await prisma.address.findUnique({ where: { id: input.address.addressId } });
+    if (!a) return null;
+    return { name: input.name, street: a.street, houseNumber: a.houseNumber, zip: a.zip, city: a.city, lat: a.lat, lng: a.lng };
+  }
+  const point = await geocodeAddress(input.address);
+  if (!point) return null;
+  const { street, houseNumber, zip, city } = input.address;
+  return { name: input.name, street, houseNumber, zip, city, lat: point.lat, lng: point.lng };
 }
 
 const conflict = (reply: FastifyReply, error: string) => reply.status(409).send({ error });
@@ -120,7 +138,7 @@ export async function adminCampaignRoutes(app: FastifyInstance) {
     const { id } = IdParams.parse(request.params);
     const source = await prisma.campaign.findUnique({
       where: { id },
-      include: { products: { include: { sizes: true } } },
+      include: { products: { include: { sizes: true } }, depots: true },
     });
     if (!source) return notFound(reply);
 
@@ -145,8 +163,18 @@ export async function adminCampaignRoutes(app: FastifyInstance) {
         purposeEn: source.purposeEn,
         invoiceDueDays: source.invoiceDueDays,
         zipCodes: source.zipCodes,
-        depotLat: source.depotLat,
-        depotLng: source.depotLng,
+        depots: {
+          create: source.depots.map((d) => ({
+            name: d.name,
+            street: d.street,
+            houseNumber: d.houseNumber,
+            zip: d.zip,
+            city: d.city,
+            lat: d.lat,
+            lng: d.lng,
+            sortOrder: d.sortOrder,
+          })),
+        },
         orderPrefix: prefix.slice(0, 20),
         products: {
           create: source.products.map((p) => ({
@@ -254,5 +282,36 @@ export async function adminCampaignRoutes(app: FastifyInstance) {
     if (size._count.orderItems > 0) return conflict(reply, 'in_use');
     await prisma.productSize.delete({ where: { id } });
     return sendCampaign(reply, size.product.campaignId);
+  });
+
+  // ---------------------------------------------------------------- start points
+
+  app.post('/campaigns/:id/depots', { schema: { params: IdParams, body: DepotInputSchema } }, async (request, reply) => {
+    const { id } = IdParams.parse(request.params);
+    if (!(await prisma.campaign.findUnique({ where: { id }, select: { id: true } }))) return notFound(reply);
+    const data = await depotData(DepotInputSchema.parse(request.body));
+    if (!data) return reply.status(422).send({ error: 'depot_not_found' });
+    const last = await prisma.depot.aggregate({ where: { campaignId: id }, _max: { sortOrder: true } });
+    await prisma.depot.create({ data: { ...data, campaignId: id, sortOrder: (last._max.sortOrder ?? -1) + 1 } });
+    return sendCampaign(reply.status(201), id);
+  });
+
+  app.put('/depots/:id', { schema: { params: IdParams, body: DepotInputSchema } }, async (request, reply) => {
+    const { id } = IdParams.parse(request.params);
+    const depot = await prisma.depot.findUnique({ where: { id } });
+    if (!depot) return notFound(reply);
+    const data = await depotData(DepotInputSchema.parse(request.body));
+    if (!data) return reply.status(422).send({ error: 'depot_not_found' });
+    await prisma.depot.update({ where: { id }, data });
+    return sendCampaign(reply, depot.campaignId);
+  });
+
+  // Routes that started here keep their orders; they just lose their start point.
+  app.delete('/depots/:id', { schema: { params: IdParams } }, async (request, reply) => {
+    const { id } = IdParams.parse(request.params);
+    const depot = await prisma.depot.findUnique({ where: { id } });
+    if (!depot) return notFound(reply);
+    await prisma.depot.delete({ where: { id } });
+    return sendCampaign(reply, depot.campaignId);
   });
 }

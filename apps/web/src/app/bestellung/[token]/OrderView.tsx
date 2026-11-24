@@ -120,6 +120,13 @@ export function OrderView({
             {t(order.paymentMethod === 'QR_INVOICE' ? 'order.payment.qr' : 'order.payment.onDelivery')} ·{' '}
             <strong>{t(order.paymentStatus === 'PAID' ? 'order.view.paid' : 'order.view.open')}</strong>
           </dd>
+          {order.paymentMethod === 'QR_INVOICE' && order.status === 'CONFIRMED' && (
+            <dd className="mt-1">
+              <a href={`/api/v1/public/orders/${token}/invoice`} target="_blank" rel="noopener" className="text-sm underline">
+                {t('invoice.download')}
+              </a>
+            </dd>
+          )}
         </div>
       </dl>
 

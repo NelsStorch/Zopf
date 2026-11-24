@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { formatDate, translator, type AdminCampaign, type CampaignStatus, type Locale, type MessageKey } from '@zopf/shared';
 import { AddressDirectory } from '@/components/admin/AddressDirectory';
 import { CampaignForm } from '@/components/admin/CampaignForm';
+import { DepotsEditor } from '@/components/admin/DepotsEditor';
 import { ProductsEditor } from '@/components/admin/ProductsEditor';
 import { Button, Notice, StatusBadge } from '@/components/admin/ui';
 import { api, errorMessage } from '@/lib/client';
@@ -89,6 +90,8 @@ export function CampaignEditor({ locale, initial }: { locale: Locale; initial: A
       <ProductsEditor locale={locale} campaign={campaign} onChange={setCampaign} />
 
       <AddressDirectory locale={locale} zipCodes={campaign.zipCodes} />
+
+      <DepotsEditor locale={locale} campaign={campaign} onChange={setCampaign} />
 
       <CampaignForm key={campaign.id} locale={locale} campaign={campaign} onSaved={setCampaign} />
 

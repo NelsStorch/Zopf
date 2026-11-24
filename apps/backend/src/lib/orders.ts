@@ -6,7 +6,8 @@ import { config } from './config.js';
 import { hashToken, newToken } from './tokens.js';
 import { geocodeAddress } from './geocode.js';
 import { sendMail } from './mail.js';
-import { cancelledMail, confirmedMail, confirmRequestMail, linkMail, type OrderSummary } from './mail-templates.js';
+import { cancelledMail, confirmedMail, confirmRequestMail, linkMail, type InvoiceAttachment, type OrderSummary } from './mail-templates.js';
+import { invoiceFilename, renderInvoice, type InvoiceData } from './invoice.js';
 
 /**
  * Orders from the public form. The flow:
@@ -125,6 +126,48 @@ export function toSummary(order: FullOrder): OrderSummary {
   };
 }
 
+/** Everything the invoice PDF needs. A reminder is dated today and due in ten days. */
+export function invoiceData(order: FullOrder, reminder = false): InvoiceData {
+  const date = reminder ? new Date() : (order.confirmedAt ?? new Date());
+  const dueDate = new Date(date.getTime() + (reminder ? 10 : order.campaign.invoiceDueDays) * 86_400_000);
+  return {
+    orderId: order.id,
+    number: formatNumber(order) ?? '',
+    locale: order.locale === 'en' ? 'en' : 'de',
+    date,
+    dueDate,
+    deliveryDate: order.campaign.deliveryDate,
+    campaignName: order.campaign.name,
+    customer: { name: order.customerName, street: order.street, houseNumber: order.houseNumber, zip: order.zip, city: order.city, email: order.email },
+    items: order.items,
+    donationRappen: order.donationRappen,
+    totalRappen: order.totalRappen,
+    paid: order.paymentStatus === 'PAID',
+    reminder,
+  };
+}
+
+/** The invoice for a mail: only for confirmed, unpaid QR orders, and only with an account configured. */
+export async function invoiceAttachment(order: FullOrder, reminder = false): Promise<InvoiceAttachment | null> {
+  if (order.paymentMethod !== 'QR_INVOICE' || order.paymentStatus === 'PAID' || order.status !== 'CONFIRMED' || !config.bankAccount) return null;
+  const data = invoiceData(order, reminder);
+  return {
+    attachment: { filename: invoiceFilename(data.number, data.locale), content: await renderInvoice(data), contentType: 'application/pdf' },
+    dueDate: data.dueDate,
+  };
+}
+
+/** The invoice PDF from the personal page; null when this order has none. */
+export async function publicInvoice(token: string): Promise<{ pdf: Buffer; filename: string } | null> {
+  const order = await byAccessToken(token);
+  if (order.paymentMethod !== 'QR_INVOICE' || order.status !== 'CONFIRMED') return null;
+  const data = invoiceData(order);
+  return { pdf: await renderInvoice(data), filename: invoiceFilename(data.number, data.locale) };
+}
+
+export { orderInclude };
+export type { FullOrder };
+
 async function logMail(orderId: number, kind: string) {
   await prisma.orderMailLog.create({ data: { orderId, kind } });
 }
@@ -182,8 +225,9 @@ export async function confirmOrder(token: string, log: FastifyBaseLogger): Promi
   });
 
   if (confirmed.reminderOptIn) await setReminder(confirmed.email, confirmed.locale, true);
-  await sendMail(confirmedMail(toSummary(confirmed), manageUrl(access.token)), log);
-  await logMail(confirmed.id, 'confirmation');
+  const invoice = await invoiceAttachment(confirmed);
+  await sendMail(confirmedMail(toSummary(confirmed), manageUrl(access.token), 'confirmed', invoice), log);
+  await logMail(confirmed.id, invoice ? 'confirmation_invoice' : 'confirmation');
   return { status: 'confirmed', accessToken: access.token };
 }
 
@@ -283,8 +327,9 @@ export async function changeOrder(token: string, input: OrderChange, log: Fastif
   });
   if (address?.addressManual) geocodeLater(order.id, address, log);
   if (updated.reminderOptIn !== order.reminderOptIn) await setReminder(updated.email, updated.locale, updated.reminderOptIn);
-  await sendMail(confirmedMail(toSummary(updated), manageUrl(token), 'changed'), log);
-  await logMail(order.id, 'changed');
+  const invoice = await invoiceAttachment(updated);
+  await sendMail(confirmedMail(toSummary(updated), manageUrl(token), 'changed', invoice), log);
+  await logMail(order.id, invoice ? 'changed_invoice' : 'changed');
 }
 
 export async function cancelOrder(token: string, log: FastifyBaseLogger): Promise<void> {

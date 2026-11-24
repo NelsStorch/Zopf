@@ -1,7 +1,8 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { OrderChangeSchema, OrderCreateSchema, ResendLinkSchema } from '@zopf/shared';
-import { cancelOrder, changeOrder, confirmOrder, createOrder, loadPublicOrder, OrderError, resendLinks } from '../lib/orders.js';
+import { cancelOrder, changeOrder, confirmOrder, createOrder, loadPublicOrder, OrderError, publicInvoice, resendLinks } from '../lib/orders.js';
+import { pdfDisposition } from '../lib/pdf-response.js';
 import { rateLimiter } from '../lib/rate-limit.js';
 
 const TokenParams = z.object({ token: z.string().regex(/^[A-Za-z0-9_-]{20,64}$/) });
@@ -80,5 +81,18 @@ export async function publicOrderRoutes(app: FastifyInstance) {
     const { email, locale } = ResendLinkSchema.parse(request.body);
     await resendLinks(email, locale, request.log);
     return reply.status(202).send({ status: 'sent_if_known' });
+  });
+
+  app.get('/orders/:token/invoice', { schema: { params: TokenParams } }, async (request, reply) => {
+    if (limited(tokenLimit, request, reply)) return;
+    const { token } = TokenParams.parse(request.params);
+    try {
+      const invoice = await publicInvoice(token);
+      if (!invoice) return reply.status(404).send({ error: 'not_found' });
+      return reply.header('Content-Type', 'application/pdf').header('Content-Disposition', pdfDisposition(invoice.filename)).header('Cache-Control', 'no-store').send(invoice.pdf);
+    } catch (err) {
+      if (err instanceof OrderError) return reply.status(err.status).send({ error: err.code });
+      throw err;
+    }
   });
 }

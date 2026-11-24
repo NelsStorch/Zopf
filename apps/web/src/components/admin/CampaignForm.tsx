@@ -12,11 +12,6 @@ function toLocalInput(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-const numberOrNull = (value: FormDataEntryValue | null) => {
-  const text = String(value ?? '').trim().replace(',', '.');
-  return text === '' ? null : Number(text);
-};
-
 const text = (form: FormData, name: string) => String(form.get(name) ?? '');
 
 export function CampaignForm({
@@ -51,8 +46,6 @@ export function CampaignForm({
         .split(/[\s,;]+/)
         .filter(Boolean),
       orderPrefix: text(form, 'orderPrefix'),
-      depotLat: numberOrNull(form.get('depotLat')),
-      depotLng: numberOrNull(form.get('depotLng')),
     };
     setBusy(true);
     setMessage(null);
@@ -136,15 +129,6 @@ export function CampaignForm({
             />
           </Field>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label={t('campaign.depotLat')}>
-            <input name="depotLat" inputMode="decimal" defaultValue={campaign?.depotLat ?? ''} className={inputClass} />
-          </Field>
-          <Field label={t('campaign.depotLng')}>
-            <input name="depotLng" inputMode="decimal" defaultValue={campaign?.depotLng ?? ''} className={inputClass} />
-          </Field>
-        </div>
-        <p className="text-xs text-zinc-500">{t('campaign.depotHint')}</p>
       </fieldset>
 
       {message && <Notice kind={message.kind}>{message.text}</Notice>}

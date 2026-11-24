@@ -28,8 +28,6 @@ export const CampaignInputSchema = z.object({
   invoiceDueDays: z.number().int().min(0).max(120),
   zipCodes: z.array(z.string().trim().regex(ZIP_CODE)).max(300),
   orderPrefix: z.string().trim().toUpperCase().regex(ORDER_PREFIX),
-  depotLat: z.number().min(45).max(48.5).nullish(),
-  depotLng: z.number().min(5.5).max(11).nullish(),
 });
 export type CampaignInput = z.infer<typeof CampaignInputSchema>;
 
@@ -96,9 +94,8 @@ export interface AdminCampaign extends AdminCampaignSummary {
   invoiceDueDays: number;
   zipCodes: string[];
   orderPrefix: string;
-  depotLat: number | null;
-  depotLng: number | null;
   products: AdminProduct[];
+  depots: AdminDepot[];
 }
 
 /** What the public pages get about a product (names already in the visitor's language). */
@@ -107,6 +104,33 @@ export interface PublicProduct {
   name: string;
   description: string | null;
   sizes: { id: number; label: string; priceRappen: number }[];
+}
+
+/** Start point of the routes (bakery, meeting point). */
+export const DepotInputSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  address: z.discriminatedUnion('kind', [
+    z.object({ kind: z.literal('directory'), addressId: z.number().int().positive() }),
+    z.object({
+      kind: z.literal('manual'),
+      street: z.string().trim().min(2).max(120),
+      houseNumber: z.string().trim().max(20),
+      zip: z.string().trim().regex(ZIP_CODE),
+      city: z.string().trim().min(2).max(80),
+    }),
+  ]),
+});
+export type DepotInput = z.infer<typeof DepotInputSchema>;
+
+export interface AdminDepot {
+  id: number;
+  name: string;
+  street: string;
+  houseNumber: string;
+  zip: string;
+  city: string;
+  lat: number | null;
+  lng: number | null;
 }
 
 /** A hit of the address search when ordering. */
