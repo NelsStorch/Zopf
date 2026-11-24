@@ -20,6 +20,9 @@ x-brand: &brand
   LEGAL_IMPRINT_URL: ${LEGAL_IMPRINT_URL:-}
   LEGAL_POSTAL_ADDRESS: ${LEGAL_POSTAL_ADDRESS:-}
   BRANDING_DIR: /branding
+  # Also shown on the privacy page.
+  PERSONAL_DATA_RETENTION_MONTHS: ${PERSONAL_DATA_RETENTION_MONTHS:-24}
+  ORDER_CONFIRM_HOURS: ${ORDER_CONFIRM_HOURS:-48}
 
 services:
   db:
@@ -80,8 +83,6 @@ services:
       IMAP_PASS: ${IMAP_PASS:-}
       OSRM_URL: ${OSRM_URL:-}
       ADDRESS_DIRECTORY_URL: ${ADDRESS_DIRECTORY_URL:-}
-      PERSONAL_DATA_RETENTION_MONTHS: ${PERSONAL_DATA_RETENTION_MONTHS:-24}
-      ORDER_CONFIRM_HOURS: ${ORDER_CONFIRM_HOURS:-48}
     volumes:
       - ./branding:/branding:ro
     healthcheck:

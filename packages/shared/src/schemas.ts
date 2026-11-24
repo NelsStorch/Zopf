@@ -32,6 +32,10 @@ export interface PublicCampaign {
   infoHtml: string | null;
   purposeHtml: string | null;
   products: import('./campaign.js').PublicProduct[];
+  /** QR invoice possible (bank account configured on the server). */
+  qrInvoiceAvailable: boolean;
+  /** Postal codes of the delivery area. */
+  zipCodes: string[];
 }
 
 export interface SessionUser {

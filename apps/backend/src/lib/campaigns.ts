@@ -1,6 +1,7 @@
 import type { AdminCampaign, AdminCampaignSummary, PublicCampaign } from '@zopf/shared';
 import { prisma } from './prisma.js';
 import { renderMarkdown } from './markdown.js';
+import { config } from './config.js';
 
 /** A campaign with its products and sizes in display order, as the admin needs it. */
 export async function loadAdminCampaign(id: number): Promise<AdminCampaign | null> {
@@ -92,6 +93,8 @@ export async function loadPublicCampaign(locale: 'de' | 'en'): Promise<PublicCam
     orderDeadline: campaign.orderDeadline.toISOString(),
     infoHtml: renderMarkdown((en ? campaign.infoEn : null) ?? campaign.infoDe),
     purposeHtml: renderMarkdown((en ? campaign.purposeEn : null) ?? campaign.purposeDe),
+    qrInvoiceAvailable: config.bankAccount !== null,
+    zipCodes: campaign.zipCodes,
     products: campaign.products
       .filter((p) => p.sizes.length > 0)
       .map((p) => ({

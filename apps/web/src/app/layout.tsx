@@ -54,6 +54,12 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                 {t('footer.imprint')}
               </a>
             )}
+            <Link className="hover:underline" href="/datenschutz">
+              {t('footer.privacy')}
+            </Link>
+            <Link className="hover:underline" href="/bestellung">
+              {t('order.lost.link')}
+            </Link>
             <Link className="ml-auto hover:underline" href="/admin">
               {t('footer.admin')}
             </Link>

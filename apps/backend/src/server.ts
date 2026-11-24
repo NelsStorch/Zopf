@@ -10,6 +10,11 @@ import { bootstrap } from './lib/bootstrap.js';
 import { prisma } from './lib/prisma.js';
 import { adminAddressRoutes } from './routes/admin-addresses.js';
 import { adminCampaignRoutes } from './routes/admin-campaigns.js';
+import { adminOrderRoutes } from './routes/admin-orders.js';
+import { publicOrderRoutes } from './routes/public-orders.js';
+import { scheduleOutbox } from './lib/mail.js';
+import { scheduleOrderCleanup } from './lib/orders.js';
+import { scheduleRetention } from './lib/retention.js';
 import { authRoutes } from './routes/auth.js';
 import { publicRoutes } from './routes/public.js';
 
@@ -57,11 +62,16 @@ async function start() {
   });
   await app.register(authRoutes, { prefix: '/api/v1/auth' });
   await app.register(publicRoutes, { prefix: '/api/v1/public' });
+  await app.register(publicOrderRoutes, { prefix: '/api/v1/public' });
   // Everything under /api/v1/admin needs an admin session (hook in each plugin).
   await app.register(adminCampaignRoutes, { prefix: '/api/v1/admin' });
   await app.register(adminAddressRoutes, { prefix: '/api/v1/admin' });
+  await app.register(adminOrderRoutes, { prefix: '/api/v1/admin' });
 
   await bootstrap(app.log);
+  scheduleOutbox(app.log);
+  scheduleOrderCleanup(app.log);
+  scheduleRetention(app.log);
 
   const port = Number(process.env.PORT) || 4000;
   await app.listen({ port, host: '0.0.0.0' });

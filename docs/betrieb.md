@@ -69,6 +69,10 @@ Im Admin bei der Aktion: «Adressen importieren». Das Backend lädt das amtlich
 - `ADDRESS_DIRECTORY_URL` zeigt bei Bedarf auf einen eigenen Spiegel, `ADDRESS_DIRECTORY_FILE` auf ein ZIP im Container (ohne Download).
 - Für Adressen, die im Verzeichnis fehlen, fragt das Backend beim Bestellen einmal den SearchServer von geo.admin.ch (nur die Adresse, nie Name oder E-Mail). Findet er nichts, setzt das OK den Pin von Hand.
 
+## Mails
+
+Versand über SMTP (`SMTP_*`, wie im Cevi-Laden). Was der Server nicht annimmt, wartet im Postausgang (`outbox_mails`) und wird nach 5 und 15 Minuten, 1, 4 und 12 Stunden erneut versucht; nach 14 Tagen räumt die Aufbewahrung auf. Ohne `SMTP_HOST` schreibt eine Test- oder lokale Installation (`MAIL_ENV_LABEL` gesetzt) die Mails samt Links ins Backend-Log, die Produktion warnt nur.
+
 ## Logs
 
 `docker compose -p zopf-prod logs -f backend`. Die Zeilen enthalten keine IP-Adressen, Header, Cookies oder Query-Strings, weil Links Geheimnisse tragen (Bestellung, Route).
@@ -83,7 +87,10 @@ Steht eine WAF (z. B. CrowdSec AppSec mit OWASP CRS) vor dem Server, kann sie Fr
 
 | Pfad | Feld | Wofür |
 | --- | --- | --- |
-| `POST /api/v1/public/orders` (folgt) | `notes`, Name, Adresse | Bemerkung zur Lieferung, Kontaktdaten |
+| `POST`/`PUT /api/v1/public/orders…` | `customerName`, `address.street`, `address.houseNumber`, `address.city`, `phone`, `notes` | Bestellformular, persönliche Bestellseite |
+| `GET /api/v1/public/addresses` | `q` | Adresssuche |
 | `/api/v1/admin/*` | `infoDe`, `infoEn`, `purposeDe`, `purposeEn`, Produktnamen und -beschreibungen | Texte der Aktion (Markdown) |
+
+Für eine CrowdSec-AppSec-Installation mit OWASP CRS reicht pro öffentlichem Pfad eine Regel, die nur diese Felder von den Regelgruppen 932/941/942 ausnimmt (am Pfad festgemacht, nicht an der Domain, so übersteht sie einen Domainwechsel). Alle anderen Felder, z. B. `email`, prüft die WAF weiter.
 
 Alle Admin-Pfade liegen unter `/api/v1/admin/`, so dass eine WAF sie mit einer einzigen Regel von den Textfiltern ausnehmen kann (sie sind ohnehin nur mit Admin-Sitzung nutzbar).

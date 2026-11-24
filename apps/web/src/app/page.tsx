@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { formatChf, formatDate, type PublicCampaign } from '@zopf/shared';
 import { serverApi } from '@/lib/api';
 import { getBrand } from '@/lib/brand';
@@ -48,7 +49,11 @@ export default async function HomePage() {
               })
             : t('home.closed')}
         </p>
-        {open && <p className="mt-6 inline-block rounded-full bg-brand-2 px-5 py-2 font-semibold text-on-brand-2">{t('home.orderSoon')}</p>}
+        {open && campaign.products.length > 0 && (
+          <Link href="/bestellen" className="mt-6 inline-block rounded-full bg-brand-2 px-6 py-3 text-lg font-bold text-on-brand-2 shadow-sm hover:opacity-90">
+            {t('home.order')}
+          </Link>
+        )}
       </section>
 
       {campaign.infoHtml && (

@@ -68,6 +68,8 @@ Danach: Mail mit **Bestätigungslink**. Erst der Klick macht die Bestellung gül
 
 ### 3. Zahlung
 
+- **Preise sind Mindestpreise.** Das Formular ermuntert zu mehr: Schnellwahl «Aufrunden auf …», +5, +10, +20 oder eigener Betrag. Der Zustupf steht als «Spende» in Bestellung, Mail und Rechnung und zählt zum Total.
+
 - **QR-Rechnung**: wie im Cevi-Laden (`pdfkit` + `swissqrbill`, Konto aus `PAYMENT_*`). Mitteilung enthält die Bestellnummer (`ZOPF-2027-0142`). Ohne vollständiges Konto in der env gibt es keine QR-Rechnung, die Option wird ausgeblendet.
 - **Bar/TWINT bei Übergabe**: In der Lieferansicht steht «Kassieren: CHF 24.00». Statischer TWINT-QR aus `TWINT_QR_PAYLOAD` auf dem Routenblatt und in der App.
 - **Bezahlt markieren**: von Hand im Admin (Liste mit Suche nach Nummer/Name/Betrag, Mehrfachauswahl) oder durch das Lieferteam (bar/TWINT). Kein automatischer Bankabgleich in der ersten Version (später möglich: camt.054).
@@ -162,7 +164,7 @@ Alle Variablen mit Erklärung: `.env.example`.
 1. **Gerüst**: Monorepo, Docker dev/prod, Deploy, CI, Branding, i18n, Prisma-Schema, Admin-Login. ✅
 2. **Aktion und Produkte** im Admin, öffentliche Infoseite. ✅
 3. **Adressverzeichnis**: Import, Suche, Geocoding für «Adresse fehlt». ✅ (das Feld selbst kommt mit dem Bestellformular)
-4. **Bestellen**: Formular, Bestätigung per Mail, persönlicher Link, Postausgang.
+4. **Bestellen**: Formular mit Spende (Preise sind Mindestpreise), Bestätigung per Mail, persönlicher Link, Postausgang, Datenschutzseite, Aufbewahrung. ✅
 5. **QR-Rechnung** und Zahlungen im Admin, Erinnerungen.
 6. **Backstube** und Exporte.
 7. **Tourenplanung**: Clustering, Karte, manuelle Anpassung, Routenblatt.

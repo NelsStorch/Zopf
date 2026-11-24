@@ -112,9 +112,9 @@ model ProductSize {
 // Imported from the official building address directory (swisstopo, open data)
 // for the postal codes of the delivery area.
 model Address {
-  id          Int     @id @default(autoincrement())
+  id          Int    @id @default(autoincrement())
   // Federal building address id (EGAID), unique in the directory.
-  egaid       BigInt  @unique
+  egaid       BigInt @unique
   street      String
   houseNumber String
   zip         String
@@ -183,39 +183,43 @@ enum LocationSource {
 }
 
 model Order {
-  id               Int            @id @default(autoincrement())
+  id               Int         @id @default(autoincrement())
   campaignId       Int
-  // Running number within the campaign; shown as <orderPrefix>-<number, 4 digits>.
-  number           Int
-  status           OrderStatus    @default(PENDING_CONFIRMATION)
-  locale           String         @default("de")
+  // Running number within the campaign, shown as <orderPrefix>-<number, 4 digits>.
+  // Given at confirmation, so expired unconfirmed orders leave no gaps.
+  number           Int?
+  status           OrderStatus @default(PENDING_CONFIRMATION)
+  locale           String      @default("de")
   // Only hashes of the secret links are stored (sha256).
-  confirmTokenHash String?        @unique
-  accessTokenHash  String?        @unique
+  confirmTokenHash String?     @unique
+  accessTokenHash  String?     @unique
   confirmExpiresAt DateTime?
   confirmedAt      DateTime?
   cancelledAt      DateTime?
 
-  customerName  String
-  email         String
-  phone         String?
-  addressId     Int?
-  street        String
-  houseNumber   String
-  zip           String
-  city          String
+  customerName   String
+  email          String
+  phone          String?
+  addressId      Int?
+  street         String
+  houseNumber    String
+  zip            String
+  city           String
   // Entered by hand because the address was missing in the directory.
-  addressManual Boolean        @default(false)
-  lat           Float?
-  lng           Float?
+  addressManual  Boolean        @default(false)
+  lat            Float?
+  lng            Float?
   locationSource LocationSource @default(NONE)
-  notes         String?
+  notes          String?
 
-  paymentMethod PaymentMethod
-  paymentStatus PaymentStatus @default(OPEN)
-  paidVia       PaidVia?
-  paidAt        DateTime?
-  totalRappen   Int
+  paymentMethod  PaymentMethod
+  paymentStatus  PaymentStatus @default(OPEN)
+  paidVia        PaidVia?
+  paidAt         DateTime?
+  // Prices are minimums: whatever the customer adds on top (donation) is part of the total.
+  donationRappen Int           @default(0)
+  // Items plus donation.
+  totalRappen    Int
 
   deliveryStatus DeliveryStatus @default(PENDING)
   deliveredAt    DateTime?
@@ -309,14 +313,14 @@ model DeliveryEvent {
 
 // Opt-in for a reminder before the next campaign. Kept until unsubscribed.
 model ReminderContact {
-  id                    Int       @id @default(autoincrement())
-  email                 String    @unique
-  locale                String    @default("de")
-  confirmTokenHash      String?   @unique
-  confirmedAt           DateTime?
-  unsubscribeTokenHash  String    @unique
-  lastRemindedAt        DateTime?
-  createdAt             DateTime  @default(now())
+  id                   Int       @id @default(autoincrement())
+  email                String    @unique
+  locale               String    @default("de")
+  confirmTokenHash     String?   @unique
+  confirmedAt          DateTime?
+  unsubscribeTokenHash String    @unique
+  lastRemindedAt       DateTime?
+  createdAt            DateTime  @default(now())
 
   @@map("reminder_contacts")
 }

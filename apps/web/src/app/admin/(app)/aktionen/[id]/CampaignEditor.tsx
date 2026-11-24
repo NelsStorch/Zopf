@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { formatDate, translator, type AdminCampaign, type CampaignStatus, type Locale, type MessageKey } from '@zopf/shared';
@@ -61,7 +62,10 @@ export function CampaignEditor({ locale, initial }: { locale: Locale; initial: A
           <StatusBadge status={campaign.status} label={t(`status.${campaign.status}` as MessageKey)} />
         </div>
         <p className="text-zinc-600 dark:text-zinc-400">
-          {t('campaigns.delivery', { date: formatDate(campaign.deliveryDate, locale) })} · {t('campaigns.orders', { count: campaign.orderCount })}
+          {t('campaigns.delivery', { date: formatDate(campaign.deliveryDate, locale) })} ·{' '}
+          <Link href={`/admin/aktionen/${campaign.id}/bestellungen`} className="underline">
+            {t('campaigns.orders', { count: campaign.orderCount })}
+          </Link>
         </p>
         <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-zinc-50 p-4 dark:bg-zinc-900">
           <span className="w-full text-sm text-zinc-600 dark:text-zinc-400 sm:w-auto sm:flex-1">{t(`campaign.statusHint.${campaign.status}` as MessageKey)}</span>
