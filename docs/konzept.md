@@ -92,7 +92,7 @@ Das OK gibt die Anzahl Routen ein. Zwei Verfahren, wählbar:
 | **Standard** | nichts | Ausgeglichenes k-Means nach Luftlinie (Routen etwa gleich viele *Zöpfe*, nicht nur Stopps). Innerhalb der Route Reihenfolge per Nearest-Neighbour + 2-opt. Gut für Dorf/Quartier, zu Fuss oder mit dem Velo. |
 | **Mit Strassennetz** | `OSRM_URL` gesetzt (eigener OSRM-Container, CH-Extrakt) | Wie oben, Reihenfolge mit echten Fuss-/Velo-/Autodistanzen. Ohne die Variable ist die Option ausgeblendet. |
 
-Beliebig viele **Startpunkte** pro Aktion (Backstube, Treffpunkte), je mit Name und Adresse aus dem Verzeichnis oder von Hand (Lage per geo.admin.ch). Jede Route startet bei einem davon. Danach von Hand: Stopps per Klick auf der Karte einer anderen Route zuweisen, Reihenfolge per Drag-and-Drop, Routen umbenennen, Farbe, Leitende als Text. Bestellungen ohne Koordinate («Adresse prüfen») werden zuerst angezeigt; das OK setzt den Pin von Hand.
+Beliebig viele **Startpunkte** pro Aktion (Backstube, Treffpunkte), je mit Name und Adresse aus dem Verzeichnis oder von Hand (Lage per geo.admin.ch). Jede Route startet bei einem davon. Danach von Hand: Stopp auf der Karte oder in der Liste anklicken und einer Route zuweisen, Reihenfolge mit Pfeilen ändern oder pro Route neu berechnen lassen, Routen umbenennen, Farbe, Leitende als Text, Startpunkt wählen. Automatisch planen ersetzt alle Routen und geht nur, solange noch keine an ein Lieferteam übergeben ist. Der Ausgleich gilt mit 15 % Spielraum; was danach noch ungleich ist, wird von Hand verschoben. Karte: Leaflet (npm, kein CDN) mit swisstopo-Kacheln. Bestellungen ohne Koordinate («Adresse prüfen») werden zuerst angezeigt; das OK setzt den Pin von Hand.
 
 **Routenblatt (PDF, A4)**: Name, Farbe, Leitende, Anzahl Stopps und Zöpfe, Summe zu kassieren, **QR-Code mit dem geheimen Link** (im Branding, Technik aus schichtplan_v2: Fehlerkorrektur H, Logo in der Mitte), TWINT-QR, Ladeliste (Stück pro Produkt/Grösse), Stoppliste in Reihenfolge mit Adresse, Name, Telefon, Bemerkung, Produkten, Betrag und Kästchen zum Abhaken (Papier als Rückfallebene).
 
@@ -168,7 +168,8 @@ Alle Variablen mit Erklärung: `.env.example`.
 4. **Bestellen**: Formular mit Spende (Preise sind Mindestpreise), Bestätigung per Mail, persönlicher Link, Postausgang, Datenschutzseite, Aufbewahrung. ✅
 5. **QR-Rechnung** und Zahlungen im Admin, Erinnerungen; mehrere Startpunkte mit Adresse. ✅
 6. **Backstube** und Exporte (Backliste live und als PDF, CSV für Excel, Kennzahlen, Storno durch das OK). ✅
-7. **Tourenplanung**: Clustering, Karte, manuelle Anpassung, Routenblatt.
-8. **Lieferansicht** mit Offline-Sync.
-9. **Erinnerung im Folgejahr**, Aufbewahrung, Datenschutzseite.
-10. Optional: OSRM, camt.054-Abgleich.
+7. **Tourenplanung**: Clustering, Karte, manuelle Anpassung. ✅ (Routenblatt kommt mit der Lieferansicht)
+8. **Routenblatt** mit QR-Code zum geheimen Link.
+9. **Lieferansicht** mit Offline-Sync.
+10. **Erinnerung im Folgejahr** (Aufbewahrung und Datenschutzseite sind schon da).
+11. Optional: camt.054-Abgleich. OSRM ist schon eingebaut (`OSRM_URL`).

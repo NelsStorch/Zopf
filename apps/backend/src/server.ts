@@ -11,6 +11,7 @@ import { prisma } from './lib/prisma.js';
 import { adminAddressRoutes } from './routes/admin-addresses.js';
 import { adminCampaignRoutes } from './routes/admin-campaigns.js';
 import { adminOrderRoutes } from './routes/admin-orders.js';
+import { adminPlanningRoutes } from './routes/admin-planning.js';
 import { publicOrderRoutes } from './routes/public-orders.js';
 import { scheduleOutbox } from './lib/mail.js';
 import { scheduleOrderCleanup } from './lib/orders.js';
@@ -67,6 +68,7 @@ async function start() {
   await app.register(adminCampaignRoutes, { prefix: '/api/v1/admin' });
   await app.register(adminAddressRoutes, { prefix: '/api/v1/admin' });
   await app.register(adminOrderRoutes, { prefix: '/api/v1/admin' });
+  await app.register(adminPlanningRoutes, { prefix: '/api/v1/admin' });
 
   await bootstrap(app.log);
   scheduleOutbox(app.log);

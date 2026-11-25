@@ -70,6 +70,10 @@ export function CampaignEditor({ locale, initial }: { locale: Locale; initial: A
           ·{' '}
           <Link href={`/admin/aktionen/${campaign.id}/backstube`} className="underline">
             {t('bakery.title')}
+          </Link>{' '}
+          ·{' '}
+          <Link href={`/admin/aktionen/${campaign.id}/routen`} className="underline">
+            {t('planning.title')}
           </Link>
         </p>
         <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-zinc-50 p-4 dark:bg-zinc-900">

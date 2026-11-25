@@ -16,7 +16,8 @@ const contentSecurityPolicy = [
   // Next.js needs inline scripts for hydration; eval only for the dev server.
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
+  // Map tiles from swisstopo (named in the privacy notice).
+  "img-src 'self' data: blob: https://wmts.geo.admin.ch",
   `connect-src 'self'${isDev ? ' ws:' : ''}`,
   "font-src 'self' data:",
   "worker-src 'self'",

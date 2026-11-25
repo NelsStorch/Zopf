@@ -52,6 +52,9 @@ export default async function AdminOverview() {
             <Link className="underline" href={`/admin/aktionen/${open.id}/backstube`}>
               {t('bakery.title')}
             </Link>
+            <Link className="underline" href={`/admin/aktionen/${open.id}/routen`}>
+              {t('planning.title')}
+            </Link>
           </p>
         )}
       </div>
