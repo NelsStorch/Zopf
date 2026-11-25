@@ -77,6 +77,7 @@ services:
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: ${SMTP_FROM:-}
       MAIL_ENV_LABEL: ${MAIL_ENV_LABEL:-LOCAL}
+      MAIL_PACING_MS: ${MAIL_PACING_MS:-1500}
     ports:
       - "127.0.0.1:${PORT_API:-4000}:4000"
     depends_on:

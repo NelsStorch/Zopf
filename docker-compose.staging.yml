@@ -78,6 +78,7 @@ services:
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: ${SMTP_FROM:-}
       MAIL_ENV_LABEL: ${MAIL_ENV_LABEL:-DEV}
+      MAIL_PACING_MS: ${MAIL_PACING_MS:-1500}
       IMAP_ENABLED: ${IMAP_ENABLED:-false}
       IMAP_HOST: ${IMAP_HOST:-}
       IMAP_PORT: ${IMAP_PORT:-993}

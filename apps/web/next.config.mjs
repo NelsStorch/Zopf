@@ -40,7 +40,8 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/:path*',
+        // Not for /api: the backend sets its own headers (e.g. the mail preview may be framed by the admin).
+        source: '/((?!api/).*)',
         headers: [
           { key: 'Content-Security-Policy', value: contentSecurityPolicy },
           { key: 'X-Frame-Options', value: 'DENY' },

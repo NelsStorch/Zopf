@@ -8,6 +8,7 @@ import { config } from './config.js';
  *   day; amounts, quantities and postal code stay for the accounts
  * - mails that never went out leave the outbox after 14 days
  * - IP addresses in the audit log after 90 days
+ * - reminder contacts 90 days after their reminder (the consent was for one)
  * Runs a minute after start and then daily.
  */
 export async function applyRetention(now = new Date()) {
@@ -33,15 +34,16 @@ export async function applyRetention(now = new Date()) {
     },
   });
   const outbox = await prisma.outboxMail.deleteMany({ where: { createdAt: { lt: new Date(now.getTime() - 14 * 86_400_000) } } });
+  const reminders = await prisma.reminderContact.deleteMany({ where: { lastRemindedAt: { lt: new Date(now.getTime() - 90 * 86_400_000) } } });
   const ips = await prisma.auditLog.updateMany({ where: { ip: { not: null }, createdAt: { lt: new Date(now.getTime() - 90 * 86_400_000) } }, data: { ip: null } });
-  return { anonymized: anonymized.count, outbox: outbox.count, ips: ips.count };
+  return { anonymized: anonymized.count, outbox: outbox.count, ips: ips.count, reminders: reminders.count };
 }
 
 export function scheduleRetention(log: FastifyBaseLogger) {
   const run = () =>
     applyRetention()
       .then((result) => {
-        if (result.anonymized || result.outbox || result.ips) log.info(result, 'Datenschutz: Aufbewahrung angewendet');
+        if (result.anonymized || result.outbox || result.ips || result.reminders) log.info(result, 'Datenschutz: Aufbewahrung angewendet');
       })
       .catch((err) => log.error({ err }, 'Aufbewahrung fehlgeschlagen'));
   setTimeout(run, 60_000).unref();

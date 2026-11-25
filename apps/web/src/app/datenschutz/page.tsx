@@ -45,7 +45,10 @@ export default async function PrivacyPage() {
           When you order we store your name, e-mail address, delivery address, optionally your phone number and a note, and what you ordered. We use this only to
           deliver your order, to send you the confirmation and, if you choose it, the invoice, and to answer your questions.
         </p>
-        <p>If you tick the reminder box, we keep your e-mail address to write to you once before the next campaign. Every such e-mail lets you unsubscribe.</p>
+        <p>
+        If you tick the reminder box (and confirm your order), we keep your e-mail address and language to write to you once before the next campaign. Every such
+        e-mail lets you unsubscribe; 90 days after the reminder we delete the address. You can also untick the box on your order page.
+      </p>
         <H>Who sees your data</H>
         <p>
           The organising team of {brand.orgName}. The delivery teams see the name, address, phone number, note, the items and the amount to collect for the orders on
@@ -89,8 +92,9 @@ export default async function PrivacyPage() {
         hast. Wir verwenden das nur, um deine Bestellung zu liefern, dir die Bestätigung und gegebenenfalls die Rechnung zu schicken und deine Fragen zu beantworten.
       </p>
       <p>
-        Kreuzt du die Erinnerung an, behalten wir deine E-Mail-Adresse, um dir vor der nächsten Aktion einmal zu schreiben. In jeder solchen Mail kannst du dich
-        abmelden.
+        Kreuzt du die Erinnerung an (und bestätigst die Bestellung), behalten wir deine E-Mail-Adresse und Sprache, um dir vor der nächsten Aktion einmal zu
+        schreiben. In jeder solchen Mail kannst du dich abmelden; 90 Tage nach der Erinnerung löschen wir die Adresse. Du kannst das Häkchen auch auf deiner
+        Bestellseite wieder entfernen.
       </p>
       <H>Wer deine Daten sieht</H>
       <p>

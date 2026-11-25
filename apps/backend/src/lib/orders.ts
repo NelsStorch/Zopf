@@ -224,22 +224,27 @@ export async function confirmOrder(token: string, log: FastifyBaseLogger): Promi
     });
   });
 
-  if (confirmed.reminderOptIn) await setReminder(confirmed.email, confirmed.locale, true);
+  if (confirmed.reminderOptIn) await setReminder(confirmed.email, confirmed.locale, true, confirmed.campaignId);
   const invoice = await invoiceAttachment(confirmed);
   await sendMail(confirmedMail(toSummary(confirmed), manageUrl(access.token), 'confirmed', invoice), log);
   await logMail(confirmed.id, invoice ? 'confirmation_invoice' : 'confirmation');
   return { status: 'confirmed', accessToken: access.token };
 }
 
-async function setReminder(email: string, locale: string, wanted: boolean) {
+/**
+ * Opt-in for a reminder before the next campaign. Counted as "already reminded"
+ * for the campaign of this order (they just ordered), and a new opt-in clears
+ * the date of an earlier reminder, so retention does not delete the fresh consent.
+ */
+async function setReminder(email: string, locale: string, wanted: boolean, campaignId: number) {
   if (!wanted) {
     await prisma.reminderContact.deleteMany({ where: { email } });
     return;
   }
   await prisma.reminderContact.upsert({
     where: { email },
-    create: { email, locale, confirmedAt: new Date(), unsubscribeTokenHash: newToken().hash },
-    update: { locale, confirmedAt: new Date() },
+    create: { email, locale, confirmedAt: new Date(), unsubscribeTokenHash: newToken().hash, remindedCampaignId: campaignId },
+    update: { locale, confirmedAt: new Date(), lastRemindedAt: null, remindedCampaignId: campaignId },
   });
 }
 
@@ -326,7 +331,7 @@ export async function changeOrder(token: string, input: OrderChange, log: Fastif
     });
   });
   if (address?.addressManual) geocodeLater(order.id, address, log);
-  if (updated.reminderOptIn !== order.reminderOptIn) await setReminder(updated.email, updated.locale, updated.reminderOptIn);
+  if (updated.reminderOptIn !== order.reminderOptIn) await setReminder(updated.email, updated.locale, updated.reminderOptIn, updated.campaignId);
   const invoice = await invoiceAttachment(updated);
   await sendMail(confirmedMail(toSummary(updated), manageUrl(token), 'changed', invoice), log);
   await logMail(order.id, invoice ? 'changed_invoice' : 'changed');

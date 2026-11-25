@@ -7,6 +7,7 @@ import { formatDate, translator, type AdminCampaign, type CampaignStatus, type L
 import { AddressDirectory } from '@/components/admin/AddressDirectory';
 import { CampaignForm } from '@/components/admin/CampaignForm';
 import { DepotsEditor } from '@/components/admin/DepotsEditor';
+import { ReminderPanel } from '@/components/admin/ReminderPanel';
 import { ProductsEditor } from '@/components/admin/ProductsEditor';
 import { Button, Notice, StatusBadge } from '@/components/admin/ui';
 import { api, errorMessage } from '@/lib/client';
@@ -22,7 +23,7 @@ const NEXT: Record<CampaignStatus, { to: CampaignStatus; label: MessageKey; prim
   ARCHIVED: [{ to: 'CLOSED', label: 'campaign.close' }],
 };
 
-export function CampaignEditor({ locale, initial }: { locale: Locale; initial: AdminCampaign }) {
+export function CampaignEditor({ locale, initial, postalAddress }: { locale: Locale; initial: AdminCampaign; postalAddress: boolean }) {
   const t = translator(locale);
   const router = useRouter();
   const [campaign, setCampaign] = useState(initial);
@@ -100,6 +101,8 @@ export function CampaignEditor({ locale, initial }: { locale: Locale; initial: A
       <AddressDirectory locale={locale} zipCodes={campaign.zipCodes} />
 
       <DepotsEditor locale={locale} campaign={campaign} onChange={setCampaign} />
+
+      <ReminderPanel locale={locale} campaignId={campaign.id} open={campaign.status === 'OPEN'} postalAddress={postalAddress} />
 
       <CampaignForm key={campaign.id} locale={locale} campaign={campaign} onSaved={setCampaign} />
 

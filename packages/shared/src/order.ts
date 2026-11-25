@@ -148,3 +148,19 @@ export interface BakeryReport {
   totals: BakeryLine[];
   routes: { id: number | null; name: string | null; color: string | null; orders: number; pieces: number; lines: BakeryLine[] }[];
 }
+
+/** State of the "remind me next year" mailing for one campaign. */
+export interface ReminderStatus {
+  /** Confirmed opt-ins in total. */
+  contacts: number;
+  /** Of these, already reminded for this campaign. */
+  reminded: number;
+  /** Still to remind for this campaign. */
+  pending: number;
+  running: boolean;
+  sent: number;
+  failed: number;
+}
+
+export const TestMailSchema = z.object({ email: z.string().trim().toLowerCase().pipe(z.email().max(200)), locale: z.enum(LOCALES).default('de') });
+export const UnsubscribeSchema = z.object({ token: z.string().regex(/^[A-Za-z0-9_-]{20,64}$/) });

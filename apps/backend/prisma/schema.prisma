@@ -343,6 +343,8 @@ model ReminderContact {
   confirmedAt          DateTime?
   unsubscribeTokenHash String    @unique
   lastRemindedAt       DateTime?
+  // The campaign the reminder was sent for: one reminder per contact and campaign ("einmalig").
+  remindedCampaignId   Int?
   createdAt            DateTime  @default(now())
 
   @@map("reminder_contacts")

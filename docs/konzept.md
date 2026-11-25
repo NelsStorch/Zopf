@@ -109,7 +109,7 @@ Beliebig viele **Startpunkte** pro Aktion (Backstube, Treffpunkte), je mit Name 
 
 - Abschluss-Übersicht: Einnahmen nach Zahlungsart, offene Beträge, Stückzahlen, Export CSV/Excel.
 - Aktion archivieren.
-- **Erinnerung im Folgejahr**: Double-Opt-in (Klick in der Bestätigungsmail). Vor der nächsten Aktion: Knopf «Erinnerung senden» an alle bestätigten Kontakte, mit Vorschau, Testmail, Abmeldelink und Postadresse des Vereins in jeder Mail. Versand im Hintergrund mit SMTP-Pacing (wie Rundmail im Cevi-Laden).
+- **Erinnerung im Folgejahr**: Double-Opt-in über die Bestätigung der Bestellung. Bei der offenen Aktion: Vorschau, Testmail, dann «Erinnerung senden» an alle, die für diese Aktion noch keine bekommen haben (wer in dieser Aktion bestellt und ankreuzt, zählt schon als erinnert). Jede Mail mit Abmeldelink (Klick auf Knopf, nicht beim Öffnen) und Postadresse; ohne `LEGAL_POSTAL_ADDRESS` ist der Versand gesperrt. Versand im Hintergrund mit Pause zwischen den Mails (`MAIL_PACING_MS`, Standard 1.5 s). 90 Tage nach der Erinnerung wird der Kontakt gelöscht; ein neues Häkchen bei einer späteren Bestellung setzt das zurück.
 
 ## Adressen und Geocoding
 
@@ -171,5 +171,5 @@ Alle Variablen mit Erklärung: `.env.example`.
 7. **Tourenplanung**: Clustering, Karte, manuelle Anpassung. ✅ (Routenblatt kommt mit der Lieferansicht)
 8. **Routenblatt** mit QR-Code zum geheimen Link, Übergabe an das Lieferteam, lesende Routenansicht. ✅
 9. **Lieferansicht** mit Offline-Sync, TWINT-QR auf dem Bildschirm, Fortschritt im Admin. ✅
-10. **Erinnerung im Folgejahr** (Aufbewahrung und Datenschutzseite sind schon da).
+10. **Erinnerung im Folgejahr**: Vorschau, Testmail, Versand im Hintergrund, Abmelden, Löschung 90 Tage danach. ✅
 11. Optional: camt.054-Abgleich. OSRM ist schon eingebaut (`OSRM_URL`).

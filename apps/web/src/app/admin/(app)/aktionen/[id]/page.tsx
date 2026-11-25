@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import type { AdminCampaign } from '@zopf/shared';
 import { serverApi } from '@/lib/api';
 import { getI18n } from '@/lib/i18n';
+import { getBrand } from '@/lib/brand';
 import { CampaignEditor } from './CampaignEditor';
 
 export default async function CampaignPage({ params }: { params: Promise<{ id: string }> }) {
@@ -16,7 +17,7 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
       <Link href="/admin/aktionen" className="text-sm text-zinc-500 hover:underline">
         ← {t('campaigns.back')}
       </Link>
-      <CampaignEditor locale={locale} initial={data} />
+      <CampaignEditor locale={locale} initial={data} postalAddress={getBrand().postalAddress !== null} />
     </section>
   );
 }

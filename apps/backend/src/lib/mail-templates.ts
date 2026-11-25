@@ -184,4 +184,29 @@ export function linkMail(to: string, locale: Locale, orders: { number: string; u
   };
 }
 
+/**
+ * The one reminder before a new campaign (opt-in with the last order). An
+ * advertising mail: it names the sender with postal address (footer) and carries
+ * an unsubscribe link (UWG Art. 3 para. 1 lit. o).
+ */
+export function reminderMail(
+  to: string,
+  locale: Locale,
+  campaign: { deliveryDate: Date; orderDeadline: Date },
+  links: { order: string; unsubscribe: string }
+): Mail {
+  const t = translator(locale);
+  const appName = config.brand.appName;
+  return {
+    ...render(locale, t('reminder.subject', { appName }), [
+      { p: t('reminder.intro', { appName }) },
+      { p: t('reminder.dates', { delivery: formatDate(campaign.deliveryDate, locale), deadline: deadlineText(campaign.orderDeadline, locale) }) },
+      { button: { label: t('reminder.button'), url: links.order } },
+      { small: t('reminder.once') },
+      { small: t('reminder.unsubscribe', { url: links.unsubscribe }) },
+    ]),
+    to,
+  };
+}
+
 export { deadlineText };
