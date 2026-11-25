@@ -7,7 +7,7 @@ import { getI18n } from '@/lib/i18n';
  * is handled (new form, new service, other retention) updates this page in the
  * same change and sets LAST_UPDATED anew. Club details come from the environment.
  */
-const LAST_UPDATED = '2026-11-24';
+const LAST_UPDATED = '2026-11-25';
 
 export async function generateMetadata() {
   const { t } = await getI18n();
@@ -49,7 +49,7 @@ export default async function PrivacyPage() {
         <H>Who sees your data</H>
         <p>
           The organising team of {brand.orgName}. The delivery teams see the name, address, phone number, note, the items and the amount to collect for the orders on
-          their route. E-mails go through our mail provider. We do not pass your data on to anyone else and do not use it for advertising.
+          their route; on delivery day this is also kept on their phones so the list works without reception, and removed there once the link has expired (two days after delivery) and the page is opened again. E-mails go through our mail provider. We do not pass your data on to anyone else and do not use it for advertising.
         </p>
         <p>
           Addresses come from the official building address directory of the Swiss Federal Office of Topography (swisstopo). If your address is missing there, we
@@ -95,7 +95,7 @@ export default async function PrivacyPage() {
       <H>Wer deine Daten sieht</H>
       <p>
         Das Organisationsteam des {brand.orgName}. Die Lieferteams sehen für die Bestellungen auf ihrer Route Name, Adresse, Telefonnummer, Bemerkung, die Produkte und
-        den zu kassierenden Betrag. E-Mails laufen über unseren Mail-Anbieter. Wir geben deine Daten sonst niemandem weiter und verwenden sie nicht für Werbung.
+        den zu kassierenden Betrag; diese Angaben liegen am Liefertag auch auf ihren Handys, damit die Liste ohne Empfang funktioniert, und werden dort gelöscht, sobald der Link abgelaufen ist (zwei Tage nach dem Liefertag) und die Seite wieder geöffnet wird. E-Mails laufen über unseren Mail-Anbieter. Wir geben deine Daten sonst niemandem weiter und verwenden sie nicht für Werbung.
       </p>
       <p>
         Die Adressen stammen aus dem amtlichen Gebäudeadressverzeichnis des Bundesamts für Landestopografie (swisstopo). Fehlt deine Adresse dort, schicken wir diese

@@ -73,6 +73,10 @@ Im Admin bei der Aktion: «Adressen importieren». Das Backend lädt das amtlich
 
 Versand über SMTP (`SMTP_*`, wie im Cevi-Laden). Was der Server nicht annimmt, wartet im Postausgang (`outbox_mails`) und wird nach 5 und 15 Minuten, 1, 4 und 12 Stunden erneut versucht; nach 14 Tagen räumt die Aufbewahrung auf. Ohne `SMTP_HOST` schreibt eine Test- oder lokale Installation (`MAIL_ENV_LABEL` gesetzt) die Mails samt Links ins Backend-Log, die Produktion warnt nur.
 
+## Lieferansicht und Service Worker
+
+Die Lieferansicht (`/route/<token>`) registriert einen Service Worker (`apps/web/public/sw.js`). Er hält nur die Seite, die Skripte unter `/_next/static/` und das Logo auf dem Handy und greift sonst nirgends ein. Routendaten und noch nicht gesendete Häkchen liegen im `localStorage` des Handys und werden gelöscht, sobald der Link ungültig ist und die Seite wieder geöffnet wird. Offline funktioniert nur das Produktions-Build; im Dev-Modus lädt Next.js zusätzliche Dateien nach.
+
 ## Logs
 
 `docker compose -p zopf-prod logs -f backend`. Die Zeilen enthalten keine IP-Adressen, Header, Cookies oder Query-Strings, weil Links Geheimnisse tragen (Bestellung, Route).
@@ -89,6 +93,7 @@ Steht eine WAF (z. B. CrowdSec AppSec mit OWASP CRS) vor dem Server, kann sie Fr
 | --- | --- | --- |
 | `POST`/`PUT /api/v1/public/orders…` | `customerName`, `address.street`, `address.houseNumber`, `address.city`, `phone`, `notes` | Bestellformular, persönliche Bestellseite |
 | `GET /api/v1/public/addresses` | `q` | Adresssuche |
+| `POST /api/v1/public/routes/<token>/events` | `events[].value` | Notizen der Lieferteams |
 | `/api/v1/admin/*` | `infoDe`, `infoEn`, `purposeDe`, `purposeEn`, Produktnamen und -beschreibungen | Texte der Aktion (Markdown) |
 
 Für eine CrowdSec-AppSec-Installation mit OWASP CRS reicht pro öffentlichem Pfad eine Regel, die nur diese Felder von den Regelgruppen 932/941/942 ausnimmt (am Pfad festgemacht, nicht an der Domain, so übersteht sie einen Domainwechsel). Alle anderen Felder, z. B. `email`, prüft die WAF weiter.

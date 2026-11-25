@@ -50,11 +50,16 @@ export async function loadPlanning(campaignId: number): Promise<Planning | null>
     openRappen: o.paymentStatus === 'OPEN' ? o.totalRappen : 0,
     routeId: o.routeId,
     routeSeq: o.routeSeq,
+    deliveryStatus: o.deliveryStatus,
   }));
 
   const depots = new Map(campaign.depots.map((d) => [d.id, d]));
+  // Last change from each route's delivery view.
+  const activity = await prisma.deliveryEvent.groupBy({ by: ['routeId'], where: { route: { campaignId } }, _max: { receivedAt: true } });
+  const lastActivity = new Map(activity.map((a) => [a.routeId, a._max.receivedAt]));
   const routes: PlanningRoute[] = campaign.routes.map((r) => {
     const own = stops.filter((s) => s.routeId === r.id).sort((a, b) => (a.routeSeq ?? 1e9) - (b.routeSeq ?? 1e9));
+    const ownOrders = orders.filter((o) => o.routeId === r.id);
     const depot = r.depotId ? depots.get(r.depotId) : undefined;
     const points: Point[] = [...(depot && located(depot) ? [depot] : []), ...own.filter(located)];
     const length = points.reduce((sum, p, i) => (i === 0 ? 0 : sum + haversine(points[i - 1], p)), 0);
@@ -70,6 +75,10 @@ export async function loadPlanning(campaignId: number): Promise<Planning | null>
       pieces: own.reduce((s, o) => s + o.pieces, 0),
       openRappen: own.reduce((s, o) => s + o.openRappen, 0),
       lengthMeters: Math.round(length),
+      delivered: ownOrders.filter((o) => o.deliveryStatus === 'DELIVERED').length,
+      notHome: ownOrders.filter((o) => o.deliveryStatus === 'NOT_HOME').length,
+      collectedRappen: ownOrders.filter((o) => o.paidVia === 'CASH' || o.paidVia === 'TWINT').reduce((s, o) => s + o.totalRappen, 0),
+      lastActivity: lastActivity.get(r.id)?.toISOString() ?? null,
     };
   });
 

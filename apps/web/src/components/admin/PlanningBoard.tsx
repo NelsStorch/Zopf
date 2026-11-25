@@ -228,6 +228,26 @@ export function PlanningBoard({ locale, initial }: { locale: Locale; initial: Pl
                     {route.openRappen > 0 && ` · ${t('planning.collect', { amount: chf(route.openRappen) })}`}
                   </span>
                   {route.leaders && <span className="block text-xs text-zinc-500">{route.leaders}</span>}
+                  {(route.released || route.delivered > 0) && (
+                    <span className="mt-2 block space-y-1">
+                      <span className="block text-sm font-semibold">
+                        {t('planning.progress', { done: route.delivered + route.notHome, total: route.stops })}
+                        {route.collectedRappen > 0 && ` · ${t('delivery.collected', { amount: chf(route.collectedRappen) })}`}
+                        {route.lastActivity && (
+                          <span className="font-normal text-zinc-500">
+                            {' '}
+                            · {new Date(route.lastActivity).toLocaleTimeString(locale === 'de' ? 'de-CH' : 'en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Zurich' })}
+                          </span>
+                        )}
+                      </span>
+                      <span className="block h-1.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+                        <span
+                          className="block h-full"
+                          style={{ width: `${route.stops ? ((route.delivered + route.notHome) / route.stops) * 100 : 0}%`, background: route.color }}
+                        />
+                      </span>
+                    </span>
+                  )}
                 </button>
                 {open && (
                   <div className="space-y-3 border-t border-zinc-200 p-4 dark:border-zinc-800">
@@ -281,6 +301,8 @@ export function PlanningBoard({ locale, initial }: { locale: Locale; initial: Pl
                       {stops.map((s, index) => (
                         <li key={s.orderId} className="flex items-center gap-1 text-sm">
                           {stopButton(s, `${index + 1}.`)}
+                          {s.deliveryStatus === 'DELIVERED' && <span title={t('orders.delivered')}>✓</span>}
+                          {s.deliveryStatus === 'NOT_HOME' && <span title={t('orders.notHome')}>✗</span>}
                           <button type="button" aria-label="↑" disabled={busy || index === 0} onClick={() => move(route, index, -1)} className="px-1 disabled:opacity-30">
                             ↑
                           </button>

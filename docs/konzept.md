@@ -170,6 +170,6 @@ Alle Variablen mit Erklärung: `.env.example`.
 6. **Backstube** und Exporte (Backliste live und als PDF, CSV für Excel, Kennzahlen, Storno durch das OK). ✅
 7. **Tourenplanung**: Clustering, Karte, manuelle Anpassung. ✅ (Routenblatt kommt mit der Lieferansicht)
 8. **Routenblatt** mit QR-Code zum geheimen Link, Übergabe an das Lieferteam, lesende Routenansicht. ✅
-9. **Lieferansicht** mit Offline-Sync.
+9. **Lieferansicht** mit Offline-Sync, TWINT-QR auf dem Bildschirm, Fortschritt im Admin. ✅
 10. **Erinnerung im Folgejahr** (Aufbewahrung und Datenschutzseite sind schon da).
 11. Optional: camt.054-Abgleich. OSRM ist schon eingebaut (`OSRM_URL`).

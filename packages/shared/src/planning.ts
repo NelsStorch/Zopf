@@ -42,7 +42,24 @@ export interface PlanningStop {
   openRappen: number;
   routeId: number | null;
   routeSeq: number | null;
+  deliveryStatus: DeliveryStatus;
 }
+
+export const DELIVERY_STATUSES = ['PENDING', 'DELIVERED', 'NOT_HOME'] as const;
+export type DeliveryStatus = (typeof DELIVERY_STATUSES)[number];
+
+/**
+ * One change from the delivery view. The phone gives each change its own id, so
+ * a change sent twice (offline queue, flaky network) counts once; when two phones
+ * change the same thing, the later one (by the phone's clock) wins.
+ */
+export const DeliveryEventSchema = z.discriminatedUnion('field', [
+  z.object({ clientEventId: z.uuid(), orderId: z.number().int().positive(), clientCreatedAt: z.iso.datetime(), field: z.literal('delivery'), value: z.enum(DELIVERY_STATUSES) }),
+  z.object({ clientEventId: z.uuid(), orderId: z.number().int().positive(), clientCreatedAt: z.iso.datetime(), field: z.literal('payment'), value: z.enum(['CASH', 'TWINT', 'OPEN']) }),
+  z.object({ clientEventId: z.uuid(), orderId: z.number().int().positive(), clientCreatedAt: z.iso.datetime(), field: z.literal('note'), value: z.string().trim().max(500) }),
+]);
+export type DeliveryEvent = z.infer<typeof DeliveryEventSchema>;
+export const DeliveryEventsSchema = z.object({ events: z.array(DeliveryEventSchema).min(1).max(200) });
 
 export interface PlanningRoute {
   id: number;
@@ -58,6 +75,12 @@ export interface PlanningRoute {
   openRappen: number;
   /** Straight-line length of the route from its start point, in metres. */
   lengthMeters: number;
+  /** Progress on delivery day. */
+  delivered: number;
+  notHome: number;
+  /** Collected at the door (cash and TWINT). */
+  collectedRappen: number;
+  lastActivity: string | null;
 }
 
 export interface Planning {
@@ -89,7 +112,11 @@ export interface DeliveryRoute {
     pieces: number;
     openRappen: number;
     paymentMethod: 'QR_INVOICE' | 'ON_DELIVERY';
-    deliveryStatus: 'PENDING' | 'DELIVERED' | 'NOT_HOME';
+    deliveryStatus: DeliveryStatus;
+    paymentStatus: 'OPEN' | 'PAID';
+    paidVia: 'BANK' | 'CASH' | 'TWINT' | null;
+    /** Note of the delivery team, e.g. "left at the neighbour's". */
+    deliveryNote: string | null;
   }[];
   /** Static TWINT code of the club, if configured. */
   twintPayload: string | null;

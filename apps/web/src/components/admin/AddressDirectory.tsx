@@ -39,7 +39,7 @@ export function AddressDirectory({ locale, zipCodes }: { locale: Locale; zipCode
   const counts = new Map(status?.counts.map((c) => [c.zip, c.count]) ?? []);
   const missing = zipCodes.filter((zip) => !counts.get(zip));
   const last = status?.last;
-  const when = (iso: string) => new Date(iso).toLocaleString(locale === 'de' ? 'de-CH' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' });
+  const when = (iso: string) => new Date(iso).toLocaleString(locale === 'de' ? 'de-CH' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Zurich' });
 
   return (
     <section className="space-y-4 rounded-2xl border border-zinc-200 p-5 dark:border-zinc-800">

@@ -102,6 +102,9 @@ export interface AdminOrderRow {
   paymentStatus: PublicOrder['paymentStatus'];
   paidVia: PaidVia | null;
   paidAt: string | null;
+  deliveryStatus: 'PENDING' | 'DELIVERED' | 'NOT_HOME';
+  deliveryNote: string | null;
+  routeName: string | null;
   /** Last payment reminder sent, if any. */
   lastReminderAt: string | null;
   notes: string | null;

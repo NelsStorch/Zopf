@@ -24,6 +24,7 @@ async function rows(where: { campaignId?: number; id?: { in: number[] } }): Prom
       items: { orderBy: { id: 'asc' } },
       campaign: { select: { orderPrefix: true } },
       mailLogs: { where: { kind: 'payment_reminder' }, orderBy: { sentAt: 'desc' }, take: 1 },
+      route: { select: { name: true } },
     },
     orderBy: [{ number: { sort: 'desc', nulls: 'first' } }, { id: 'desc' }],
   });
@@ -47,6 +48,9 @@ async function rows(where: { campaignId?: number; id?: { in: number[] } }): Prom
     paidVia: o.paidVia,
     paidAt: o.paidAt?.toISOString() ?? null,
     lastReminderAt: o.mailLogs[0]?.sentAt.toISOString() ?? null,
+    deliveryStatus: o.deliveryStatus,
+    deliveryNote: o.deliveryNote,
+    routeName: o.route?.name ?? null,
     notes: o.notes,
   }));
 }

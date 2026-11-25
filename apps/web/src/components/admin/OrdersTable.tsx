@@ -179,7 +179,16 @@ export function OrdersTable({ locale, initial }: { locale: Locale; initial: Admi
                   )}
                   {o.notes && <span className="block text-xs italic">«{o.notes}»</span>}
                 </td>
-                <td className="px-3 py-2 align-top">{o.items}</td>
+                <td className="px-3 py-2 align-top">
+                  {o.items}
+                  {o.routeName && <span className="block text-xs text-zinc-500">{o.routeName}</span>}
+                  {o.deliveryStatus !== 'PENDING' && (
+                    <span className={`block text-xs font-semibold ${o.deliveryStatus === 'DELIVERED' ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
+                      {o.deliveryStatus === 'DELIVERED' ? `✓ ${t('orders.delivered')}` : `✗ ${t('orders.notHome')}`}
+                    </span>
+                  )}
+                  {o.deliveryNote && <span className="block text-xs text-sky-700 dark:text-sky-300">✎ {o.deliveryNote}</span>}
+                </td>
                 <td className="whitespace-nowrap px-3 py-2 text-right align-top tabular-nums">
                   {chf(o.totalRappen)}
                   {o.donationRappen > 0 && <span className="block text-xs text-zinc-500">♥ {chf(o.donationRappen)}</span>}
