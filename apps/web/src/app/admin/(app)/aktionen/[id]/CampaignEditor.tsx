@@ -66,6 +66,10 @@ export function CampaignEditor({ locale, initial }: { locale: Locale; initial: A
           {t('campaigns.delivery', { date: formatDate(campaign.deliveryDate, locale) })} ·{' '}
           <Link href={`/admin/aktionen/${campaign.id}/bestellungen`} className="underline">
             {t('campaigns.orders', { count: campaign.orderCount })}
+          </Link>{' '}
+          ·{' '}
+          <Link href={`/admin/aktionen/${campaign.id}/backstube`} className="underline">
+            {t('bakery.title')}
           </Link>
         </p>
         <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-zinc-50 p-4 dark:bg-zinc-900">

@@ -33,7 +33,15 @@ export default async function OrdersPage({ params }: { params: Promise<{ id: str
       <h1 className="text-2xl font-bold">
         {t('orders.title')} · {campaign.name}
       </h1>
-      <p className="rounded-xl bg-zinc-50 px-4 py-3 font-medium dark:bg-zinc-900">{stats}</p>
+      <div className="flex flex-wrap items-center gap-3">
+        <p className="flex-1 rounded-xl bg-zinc-50 px-4 py-3 font-medium dark:bg-zinc-900">{stats}</p>
+        <a href={`/api/v1/admin/campaigns/${campaign.id}/orders.csv`} className="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-semibold dark:border-zinc-700">
+          {t('orders.csv')}
+        </a>
+        <Link href={`/admin/aktionen/${campaign.id}/backstube`} className="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-semibold dark:border-zinc-700">
+          {t('bakery.title')}
+        </Link>
+      </div>
 
       {orders.length === 0 ? <p className="text-zinc-600 dark:text-zinc-400">{t('orders.empty')}</p> : <OrdersTable locale={locale} initial={orders} />}
     </section>

@@ -126,3 +126,22 @@ export function donationSuggestions(itemsRappen: number): number[] {
   const values = new Set<number>([roundUp(500), roundUp(1000), 500, 1000, 2000].filter((v) => v > 0 && v <= MAX_DONATION_RAPPEN));
   return [...values].sort((a, b) => a - b).slice(0, 4);
 }
+
+/** One line of the bakery list: how many of one product size. */
+export interface BakeryLine {
+  sizeId: number | null;
+  productName: string;
+  sizeLabel: string;
+  quantity: number;
+}
+
+/** What the bakery needs: totals over all confirmed orders and per route (for packing the crates). */
+export interface BakeryReport {
+  campaign: { id: number; name: string; deliveryDate: string };
+  orders: number;
+  pieces: number;
+  /** Rappen over all confirmed orders. */
+  money: { totalRappen: number; donationRappen: number; openRappen: number };
+  totals: BakeryLine[];
+  routes: { id: number | null; name: string | null; color: string | null; orders: number; pieces: number; lines: BakeryLine[] }[];
+}

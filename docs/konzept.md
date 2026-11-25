@@ -80,7 +80,8 @@ Danach: Mail mit **Bestätigungslink**. Erst der Klick macht die Bestellung gül
 
 - Übersicht der Stückzahlen pro Produkt und Grösse über alle bestätigten Bestellungen, live.
 - Zusätzlich pro Route (zum Bereitstellen der Kisten).
-- Druckbare Liste (PDF).
+- Druckbare Liste (PDF). Die Seite aktualisiert sich alle 30 Sekunden (für einen Bildschirm in der Küche).
+- Export aller Bestellungen als CSV für Excel (Semikolon, UTF-8 mit BOM, eine Spalte pro Grösse). Werte, die mit `=`, `+`, `-` oder `@` beginnen, werden entschärft, damit Kundeneingaben nicht als Formel laufen.
 
 ### 5. Tourenplanung
 
@@ -166,7 +167,7 @@ Alle Variablen mit Erklärung: `.env.example`.
 3. **Adressverzeichnis**: Import, Suche, Geocoding für «Adresse fehlt». ✅ (das Feld selbst kommt mit dem Bestellformular)
 4. **Bestellen**: Formular mit Spende (Preise sind Mindestpreise), Bestätigung per Mail, persönlicher Link, Postausgang, Datenschutzseite, Aufbewahrung. ✅
 5. **QR-Rechnung** und Zahlungen im Admin, Erinnerungen; mehrere Startpunkte mit Adresse. ✅
-6. **Backstube** und Exporte.
+6. **Backstube** und Exporte (Backliste live und als PDF, CSV für Excel, Kennzahlen, Storno durch das OK). ✅
 7. **Tourenplanung**: Clustering, Karte, manuelle Anpassung, Routenblatt.
 8. **Lieferansicht** mit Offline-Sync.
 9. **Erinnerung im Folgejahr**, Aufbewahrung, Datenschutzseite.

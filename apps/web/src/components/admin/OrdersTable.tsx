@@ -60,6 +60,13 @@ export function OrdersTable({ locale, initial }: { locale: Locale; initial: Admi
     else setNotice({ kind: 'error', text: errorMessage(locale, result) });
   }
 
+  async function cancel(order: AdminOrderRow) {
+    if (!window.confirm(t('orders.cancelConfirm', { number: order.number ?? order.customerName }))) return;
+    const result = await api<AdminOrderRow>(`/api/v1/admin/orders/${order.id}/cancel`, 'POST');
+    if (result.ok && result.data) merge([result.data]);
+    else setNotice({ kind: 'error', text: errorMessage(locale, result) });
+  }
+
   async function bulkPaid() {
     setBusy(true);
     const result = await api<{ updated: number; rows: AdminOrderRow[] }>('/api/v1/admin/orders/payments', 'POST', { ids: [...selected], via });
@@ -152,6 +159,11 @@ export function OrdersTable({ locale, initial }: { locale: Locale; initial: Admi
                 <td className="whitespace-nowrap px-3 py-2 align-top font-mono">
                   {o.number ?? '—'}
                   {o.status !== 'CONFIRMED' && <span className="block font-sans text-xs">{t(o.status === 'CANCELLED' ? 'orders.cancelled' : 'orders.pending')}</span>}
+                  {o.status !== 'CANCELLED' && o.paymentStatus === 'OPEN' && (
+                    <button type="button" onClick={() => cancel(o)} className="mt-1 block font-sans text-xs text-red-700 underline dark:text-red-400">
+                      {t('orders.cancel')}
+                    </button>
+                  )}
                 </td>
                 <td className="px-3 py-2 align-top">
                   <span className="font-medium">{o.customerName}</span>
