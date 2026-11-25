@@ -2,6 +2,7 @@ import type { Planning, PlanningRoute, PlanningStop } from '@zopf/shared';
 import { prisma } from './prisma.js';
 import { config } from './config.js';
 import { formatNumber } from './orders.js';
+import { routeLink } from './route-links.js';
 import { balancedClusters, haversine, osrmMatrix, pathLength, ROUTE_COLORS, sequence, straightLine, type Distance, type Point } from './routing.js';
 
 export class PlanningError extends Error {
@@ -64,6 +65,7 @@ export async function loadPlanning(campaignId: number): Promise<Planning | null>
       leaders: r.leaders,
       depotId: r.depotId,
       released: r.releasedAt !== null,
+      link: routeLink(r),
       stops: own.length,
       pieces: own.reduce((s, o) => s + o.pieces, 0),
       openRappen: own.reduce((s, o) => s + o.openRappen, 0),

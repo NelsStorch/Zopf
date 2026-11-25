@@ -41,7 +41,7 @@ const CONTENT = PAGE_WIDTH - 2 * MARGIN;
 const SLIP_HEIGHT = 298;
 
 /** The club's own logo.png (pdfkit reads PNG/JPEG, not SVG), otherwise the Cevi logo as vector. */
-function drawLogo(doc: PDFKit.PDFDocument, x: number, y: number, size: number) {
+export function drawLogo(doc: PDFKit.PDFDocument, x: number, y: number, size: number) {
   const own = path.join(config.brandingDir, 'logo.png');
   if (fs.existsSync(own)) {
     try {

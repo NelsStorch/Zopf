@@ -13,6 +13,7 @@ import { adminCampaignRoutes } from './routes/admin-campaigns.js';
 import { adminOrderRoutes } from './routes/admin-orders.js';
 import { adminPlanningRoutes } from './routes/admin-planning.js';
 import { publicOrderRoutes } from './routes/public-orders.js';
+import { publicRouteRoutes } from './routes/public-routes.js';
 import { scheduleOutbox } from './lib/mail.js';
 import { scheduleOrderCleanup } from './lib/orders.js';
 import { scheduleRetention } from './lib/retention.js';
@@ -64,6 +65,7 @@ async function start() {
   await app.register(authRoutes, { prefix: '/api/v1/auth' });
   await app.register(publicRoutes, { prefix: '/api/v1/public' });
   await app.register(publicOrderRoutes, { prefix: '/api/v1/public' });
+  await app.register(publicRouteRoutes, { prefix: '/api/v1/public' });
   // Everything under /api/v1/admin needs an admin session (hook in each plugin).
   await app.register(adminCampaignRoutes, { prefix: '/api/v1/admin' });
   await app.register(adminAddressRoutes, { prefix: '/api/v1/admin' });

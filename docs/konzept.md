@@ -100,7 +100,7 @@ Beliebig viele **Startpunkte** pro Aktion (Backstube, Treffpunkte), je mit Name 
 
 ### 6. Liefern (Lieferteam)
 
-- Link öffnet `/route/<token>` (PWA, auf dem Startbildschirm installierbar). Token nur gehasht in der DB, vom OK jederzeit neu erzeugbar (alter Link wird ungültig). Gültigkeit: ab Freigabe durch das OK bis 2 Tage nach dem Liefertag.
+- Link öffnet `/route/<token>` (PWA, auf dem Startbildschirm installierbar). Der Token wird per HMAC aus einem Server-Geheimnis (`ROUTE_LINK_SECRET`, sonst `JWT_SECRET`) und dem Freigabezeitpunkt abgeleitet, in der DB steht nur sein Hash. So lässt sich das Routenblatt jederzeit neu drucken; «Neuer Link» (neuer Freigabezeitpunkt) oder «Zurückziehen» macht den alten sofort ungültig. Gültigkeit: ab Freigabe bis 2 Tage nach dem Liefertag. Solange eine Route übergeben ist, ist «automatisch planen» gesperrt.
 - Liste in Reihenfolge und Karte, «Navigation öffnen» (Link auf die Karten-App des Handys, keine eingebettete fremde Karte).
 - Pro Stopp: Geliefert · Nicht angetroffen · Bezahlt (bar/TWINT) · Notiz. Grosser Hinweis «Kassieren CHF …» wenn offen.
 - **Offline**: Service Worker cacht App und Routendaten. Häkchen gehen in eine Warteschlange (IndexedDB) und werden synchronisiert, sobald Netz da ist. Anzeige «3 Änderungen noch nicht gesendet». Jede Änderung trägt eine Client-ID und einen Zeitstempel; der Server ist idempotent und protokolliert alles (`delivery_events`). Konflikt (zwei Handys, gleiches Feld): spätere Änderung gewinnt, beide stehen im Protokoll.
@@ -169,7 +169,7 @@ Alle Variablen mit Erklärung: `.env.example`.
 5. **QR-Rechnung** und Zahlungen im Admin, Erinnerungen; mehrere Startpunkte mit Adresse. ✅
 6. **Backstube** und Exporte (Backliste live und als PDF, CSV für Excel, Kennzahlen, Storno durch das OK). ✅
 7. **Tourenplanung**: Clustering, Karte, manuelle Anpassung. ✅ (Routenblatt kommt mit der Lieferansicht)
-8. **Routenblatt** mit QR-Code zum geheimen Link.
+8. **Routenblatt** mit QR-Code zum geheimen Link, Übergabe an das Lieferteam, lesende Routenansicht. ✅
 9. **Lieferansicht** mit Offline-Sync.
 10. **Erinnerung im Folgejahr** (Aufbewahrung und Datenschutzseite sind schon da).
 11. Optional: camt.054-Abgleich. OSRM ist schon eingebaut (`OSRM_URL`).

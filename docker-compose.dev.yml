@@ -62,6 +62,7 @@ services:
       DATABASE_URL: postgresql://${DB_USER:-zopf_dev}:${DB_PASSWORD}@db:5432/${DB_NAME:-zopf_dev}?schema=public
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET muss in .env gesetzt sein (mind. 32 Zeichen)}
       INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-}
+      ROUTE_LINK_SECRET: ${ROUTE_LINK_SECRET:-}
       PAYMENT_IBAN: ${PAYMENT_IBAN:-}
       PAYMENT_CREDITOR_NAME: ${PAYMENT_CREDITOR_NAME:-}
       PAYMENT_CREDITOR_ADDRESS: ${PAYMENT_CREDITOR_ADDRESS:-}

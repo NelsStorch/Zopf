@@ -51,6 +51,8 @@ export interface PlanningRoute {
   leaders: string | null;
   depotId: number | null;
   released: boolean;
+  /** Secret link for the delivery team (admin only), null until handed over. */
+  link: string | null;
   stops: number;
   pieces: number;
   openRappen: number;
@@ -66,4 +68,29 @@ export interface Planning {
   stops: PlanningStop[];
   /** OSRM_URL set: the order within routes uses real walking distances. */
   roadDistances: boolean;
+}
+
+/** What the delivery team sees behind the route link. */
+export interface DeliveryRoute {
+  route: { name: string; color: string; leaders: string | null };
+  campaign: { name: string; deliveryDate: string; deliveryTimeText: string | null };
+  depot: { name: string; address: string; lat: number | null; lng: number | null } | null;
+  stops: {
+    orderId: number;
+    seq: number;
+    number: string | null;
+    customerName: string;
+    address: string;
+    lat: number | null;
+    lng: number | null;
+    phone: string | null;
+    notes: string | null;
+    items: string;
+    pieces: number;
+    openRappen: number;
+    paymentMethod: 'QR_INVOICE' | 'ON_DELIVERY';
+    deliveryStatus: 'PENDING' | 'DELIVERED' | 'NOT_HOME';
+  }[];
+  /** Static TWINT code of the club, if configured. */
+  twintPayload: string | null;
 }

@@ -4,6 +4,7 @@ import { type FormEvent, useMemo, useState } from 'react';
 import { formatChf, translator, type Locale, type Planning, type PlanningRoute, type PlanningStop, type RouteInput } from '@zopf/shared';
 import { api, errorMessage, type ApiResult } from '@/lib/client';
 import { PlanningMap } from './PlanningMap';
+import { RouteHandover } from './RouteHandover';
 import { Button, Field, inputClass, Notice } from './ui';
 
 const bySeq = (a: PlanningStop, b: PlanningStop) => (a.routeSeq ?? 1e9) - (b.routeSeq ?? 1e9) || (a.number ?? '').localeCompare(b.number ?? '');
@@ -230,6 +231,7 @@ export function PlanningBoard({ locale, initial }: { locale: Locale; initial: Pl
                 </button>
                 {open && (
                   <div className="space-y-3 border-t border-zinc-200 p-4 dark:border-zinc-800">
+                    <RouteHandover locale={locale} route={route} busy={busy} run={run} />
                     {editing === route.id ? (
                       <form method="post" onSubmit={(e) => saveRoute(route, e)} className="space-y-2">
                         <div className="grid grid-cols-[1fr_4rem] gap-2">
@@ -299,9 +301,21 @@ export function PlanningBoard({ locale, initial }: { locale: Locale; initial: Pl
               </section>
             );
           })}
-          <Button onClick={() => run(api(`/api/v1/admin/campaigns/${planning.campaign.id}/routes`, 'POST'))} disabled={busy}>
-            {t('planning.addRoute')}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => run(api(`/api/v1/admin/campaigns/${planning.campaign.id}/routes`, 'POST'))} disabled={busy}>
+              {t('planning.addRoute')}
+            </Button>
+            {planning.routes.some((r) => r.link) && (
+              <a
+                href={`/api/v1/admin/campaigns/${planning.campaign.id}/sheets.pdf`}
+                target="_blank"
+                rel="noopener"
+                className="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-semibold dark:border-zinc-700"
+              >
+                {t('sheet.all')}
+              </a>
+            )}
+          </div>
         </aside>
       </div>
     </div>
