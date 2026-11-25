@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { invoiceFilename, qrReference, renderInvoice, type InvoiceData } from './invoice.js';
+import { isQRReferenceValid, isSCORReferenceValid } from 'swissqrbill/utils';
+import { invoiceFilename, paymentReference, renderInvoice, type InvoiceData } from './invoice.js';
 
 const data: InvoiceData = {
   orderId: 42,
@@ -56,8 +57,19 @@ describe('renderInvoice', () => {
     process.env.PAYMENT_IBAN = QR_IBAN;
     const pdf = await renderInvoice(data);
     expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
-    expect(qrReference(QR_IBAN, 42)).toMatch(/^0{24}42\d$/);
-    expect(qrReference(ACCOUNT.PAYMENT_IBAN, 42)).toBeUndefined();
+    const reference = paymentReference(QR_IBAN, 42, 'ZOPF-2027-0042');
+    expect(reference).toMatch(/^0{24}42\d$/);
+    expect(isQRReferenceValid(reference)).toBe(true);
+  });
+
+  it('uses a creditor reference (SCOR) from the order number with a normal IBAN', () => {
+    const reference = paymentReference(ACCOUNT.PAYMENT_IBAN, 42, 'ZOPF-2027-0042');
+    expect(reference).toMatch(/^RF\d{2}ZOPF20270042$/);
+    expect(isSCORReferenceValid(reference)).toBe(true);
+    // Too long for the 21 characters: the order id instead.
+    const long = paymentReference(ACCOUNT.PAYMENT_IBAN, 42, 'VERYLONGPREFIX-2027X-0042');
+    expect(long).toMatch(/^RF\d{2}42$/);
+    expect(isSCORReferenceValid(long)).toBe(true);
   });
 
   it('names the file in the customer language', () => {

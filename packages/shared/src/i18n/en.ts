@@ -287,7 +287,7 @@ export const en: Record<MessageKey, string> = {
   'invoice.amount': 'Amount',
   'invoice.donationDetail': 'Thank you very much!',
   'invoice.paid': 'Amount received. Thank you!',
-  'invoice.howToPay': 'Please transfer the amount with the payment part below: scan the QR code in your banking app, amount and message are filled in already.',
+  'invoice.howToPay': 'Please transfer the amount with the payment part below: scan the QR code in your banking app, amount and reference are filled in already.',
   'invoice.thanks': 'Thank you for supporting the {appName}!',
   'invoice.download': 'Download invoice (PDF)',
   'mail.payQrAttached': 'Payment: the QR invoice for CHF {amount} is attached to this e-mail. Please pay it by {date}.',

@@ -287,7 +287,7 @@ export const de = {
   'invoice.amount': 'Betrag',
   'invoice.donationDetail': 'Herzlichen Dank!',
   'invoice.paid': 'Betrag erhalten. Vielen Dank!',
-  'invoice.howToPay': 'Bitte überweise den Betrag mit dem Zahlteil unten: In der Banking-App den QR-Code scannen, Betrag und Mitteilung sind schon ausgefüllt.',
+  'invoice.howToPay': 'Bitte überweise den Betrag mit dem Zahlteil unten: In der Banking-App den QR-Code scannen, Betrag und Referenz sind schon ausgefüllt.',
   'invoice.thanks': 'Vielen Dank, dass du die {appName} unterstützt!',
   'invoice.download': 'Rechnung herunterladen (PDF)',
   'mail.payQrAttached': 'Bezahlung: Die QR-Rechnung über CHF {amount} liegt dieser Mail bei. Bitte bezahle sie bis {date}.',

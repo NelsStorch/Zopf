@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import PDFDocument from 'pdfkit';
 import { SwissQRBill } from 'swissqrbill/pdf';
-import { calculateQRReferenceChecksum, isQRIBAN } from 'swissqrbill/utils';
+import { calculateQRReferenceChecksum, calculateSCORReferenceChecksum, isQRIBAN } from 'swissqrbill/utils';
 import { CEVI_LOGO_PATHS, formatChf, formatDate, translator, type Locale } from '@zopf/shared';
 import { config } from './config.js';
 
@@ -59,14 +59,22 @@ export function drawLogo(doc: PDFKit.PDFDocument, x: number, y: number, size: nu
 }
 
 /**
- * A QR-IBAN needs a QR reference (27 digits, the last a check digit); a normal
- * IBAN works with the message alone. The reference is the order id, so a payment
- * can be matched to its order.
+ * Structured reference on the slip, so a payment can be matched to its order
+ * (by hand today, from a bank file later):
+ * - QR-IBAN: QR reference, 26 digits from the order id plus a check digit (required).
+ * - normal IBAN: creditor reference ISO 11649 ("SCOR", RF + 2 check digits + up to 21
+ *   letters/digits): the order number without hyphens, e.g. RF.. ZOPF20270042; the
+ *   order id if the number is too long.
+ * The message with the order number stays on the slip as well.
  */
-export function qrReference(iban: string, orderId: number): string | undefined {
-  if (!isQRIBAN(iban.replace(/\s+/g, ''))) return undefined;
-  const base = String(orderId).padStart(26, '0');
-  return base + calculateQRReferenceChecksum(base);
+export function paymentReference(iban: string, orderId: number, orderNumber: string): string {
+  if (isQRIBAN(iban.replace(/\s+/g, ''))) {
+    const base = String(orderId).padStart(26, '0');
+    return base + calculateQRReferenceChecksum(base);
+  }
+  const fromNumber = orderNumber.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const base = fromNumber.length > 0 && fromNumber.length <= 21 ? fromNumber : String(orderId);
+  return `RF${calculateSCORReferenceChecksum(base)}${base}`;
 }
 
 /** Street and house number for the slip: swissqrbill wants them apart. */
@@ -169,7 +177,7 @@ export function renderInvoice(data: InvoiceData): Promise<Buffer> {
         debtor: c.street
           ? { name: c.name.slice(0, 70), ...slipAddress(c.street, c.houseNumber), zip: c.zip, city: c.city.slice(0, 35), country: 'CH' }
           : undefined,
-        reference: qrReference(account.iban, data.orderId),
+        reference: paymentReference(account.iban, data.orderId, data.number),
         message: [account.message, data.number].filter(Boolean).join(' ').slice(0, 140),
       },
       { language: data.locale === 'en' ? 'EN' : 'DE' }
