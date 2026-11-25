@@ -203,7 +203,10 @@ Step "1. Archiv erstellen"
 # place: only those in the project root stay back, because the migrations under
 # apps/backend/prisma/migrations are .sql files too and must go along.
 $dumpExcludes = @(Get-ChildItem -File -Force | Where-Object { $_.Name -match '\.(sql|sql\.gz|dump|csv)$' } | ForEach-Object { "--exclude=$($_.Name)" })
-tar.exe --format=gnutar --exclude="node_modules" --exclude=".next" --exclude=".git" --exclude="dist" --exclude="out" --exclude="backups" --exclude="./branding" --exclude=".env*" --exclude="deploy.config.ps1" @dumpExcludes --exclude=$ArchiveName --exclude=$RemoteScript -czf $ArchiveName .
+# Windows' own tar (bsdtar): started from Git Bash, "tar.exe" would be GNU tar, which knows no --format=gnutar.
+$Tar = Join-Path $env:SystemRoot 'System32\tar.exe'
+if (-not (Test-Path $Tar)) { $Tar = 'tar.exe' }
+& $Tar --format=gnutar --exclude="node_modules" --exclude=".next" --exclude=".git" --exclude="dist" --exclude="out" --exclude="backups" --exclude="./branding" --exclude=".env*" --exclude="deploy.config.ps1" @dumpExcludes --exclude=$ArchiveName --exclude=$RemoteScript -czf $ArchiveName .
 if ($LASTEXITCODE -ne 0) { Stop-Deploy "Das Archiv konnte nicht erstellt werden." }
 
 # The part that runs on the server. Written with Unix line endings, otherwise
